@@ -17,7 +17,7 @@ batches: "data/batches_full.txt"
 #     E.g. for plasmid search we recommend cobs_kmer_thres: 0.33
 # Higher values mean less but more accurate matches and faster pipeline execution, but can incur into missing matches.
 #     E.g. for gene search we recommend cobs_kmer_thres: 0.7
-cobs_kmer_thres: 0.7
+mfur_kmer_thres: 0.7
 
 # number of best kmer matching hits to keep for each query record (in case of tie, all equivalent hits are included too)
 nb_best_hits: 100
