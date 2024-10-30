@@ -37,7 +37,7 @@ def process_mfur_output(hits_to_keep): #format the output as
             elif prev_query == query: #increase counter otherwise 
                 i += 1
 
-        fname_only = keep_fname(mfur_fname) #clean matched filename
+        fname_only = keep_fname(filename) #clean matched filename
 
         # 3. Extract the Top N results (+ties)
         if i < hits_to_keep:
@@ -53,7 +53,7 @@ def process_mfur_output(hits_to_keep): #format the output as
 def main():
 
     parser = argparse.ArgumentParser(
-        description="Postprocess cobs output: keep top n hits (+ties) and remove random identifiers")
+        description="Postprocess mfur output: keep top n hits (+ties) and remove random identifiers")
 
     parser.add_argument(
         '-n',
