@@ -148,7 +148,8 @@ qfiles = get_all_query_filepaths()
 print(f"Query files: {list(map(str, qfiles))}")
 
 assemblies_dir = Path(f"{config['download_dir']}/asms")
-cobs_dir = Path(f"{config['download_dir']}/cobs")
+#cobs_dir = Path(f"{config['download_dir']}/cobs")
+mfur_dir = Path(f"{config['download_dir']}/mfur")
 decompression_dir = Path(
     config.get("decompression_dir", "intermediate/02_cobs_decompressed")
 )
@@ -193,13 +194,25 @@ else:
 ##################################
 
 
-def cobs_url_fct(wildcards):
-    x = wildcards.batch
-    if x >= "eubacterium":
-        return f"https://zenodo.org/record/6849657/files/{x}.cobs_classic.xz"
-    else:
-        return f"https://zenodo.org/record/6845083/files/{x}.cobs_classic.xz"
+# def cobs_url_fct(wildcards):
+#     x = wildcards.batch
+#     if x >= "eubacterium":
+#         return f"https://zenodo.org/record/6849657/files/{x}.cobs_classic.xz"
+#     else:
+#         return f"https://zenodo.org/record/6845083/files/{x}.cobs_classic.xz"
 
+
+def mfur_url_fct(wildcards): #url to the HQ indexes
+    x = wildcards.batch
+    if x <= "dustbin__15":
+        return f"https://zenodo.org/record/14002973/files/{x}.mfur" #part1
+    elif x <= "mycobacterium_kansasii__01" :
+        return f"https://zenodo.org/record/14002975/files/{x}.mfur" #part2
+    elif x <= "salmonella_enterica__33" :
+        return f"https://zenodo.org/record/14006705/files/{x}.mfur" #part3
+    else :
+        return f"https://zenodo.org/record/14006707/files/{x}.mfur" #part4
+        
 
 def asms_url_fct(wildcards):
     asm_zenodo = 4602622
@@ -224,27 +237,38 @@ rule all:
         f"output/{get_filename_for_all_queries()}.sam_summary.stats",
 
 
+# rule download:
+#     """Download assemblies and COBS indexes.
+#     """
+#     input:
+#         [f"{assemblies_dir}/{x}.tar.xz" for x in batches],
+#         [f"{cobs_dir}/{x}.cobs_classic.xz" for x in batches],
+
 rule download:
-    """Download assemblies and COBS indexes.
+    """Download assemblies and meta-Fulgor indexes.
     """
     input:
         [f"{assemblies_dir}/{x}.tar.xz" for x in batches],
-        [f"{cobs_dir}/{x}.cobs_classic.xz" for x in batches],
-
+        [f"{mfur_dir}/{x}.mfur" for x in batches]
 
 rule download_asms_batches:
     """Download assemblies.
     """
     input:
-        [f"{assemblies_dir}/{x}.tar.xz" for x in batches],
+        [f"{assemblies_dir}/{x}.tar.xz" for x in batches]
 
 
-rule download_cobs_batches:
-    """Download COBS indexes.
+# rule download_cobs_batches:
+#     """Download COBS indexes.
+#     """
+#     input:
+#         [f"{cobs_dir}/{x}.cobs_classic.xz" for x in batches]
+
+rule download_mfur_batches:
+    """Download meta-Fulgor indexes.
     """
     input:
-        [f"{cobs_dir}/{x}.cobs_classic.xz" for x in batches],
-
+        [f"{mfur_dir}/{x}.mfur" for x in batches]
 
 rule match:
     """Match reads to the COBS indexes.
@@ -284,23 +308,40 @@ rule download_asm_batch:
         """
 
 
-rule download_cobs_batch:
-    """Download compressed cobs indexes
+# rule download_cobs_batch:
+#     """Download compressed cobs indexes
+#     """
+#     output:
+#         xz=f"{cobs_dir}/{{batch}}.cobs_classic.xz",
+#     threads: 1
+#     resources:
+#         max_download_threads=1,
+#         mem_mb=200,
+#         sleep_amount=lambda wildcards, attempt: get_sleep_amount(attempt),
+#     params:
+#         url=cobs_url_fct,
+#     shell:
+#         """
+#         scripts/download.sh {params.url} {output.xz} {resources.sleep_amount}
+#         """
+
+
+rule download_mfur_batch:
+    """Download uncompressed meta-Fulgor indexes
     """
     output:
-        xz=f"{cobs_dir}/{{batch}}.cobs_classic.xz",
+        batch=f"{mfur_dir}/{{batch}}.mfur",
     threads: 1
     resources:
         max_download_threads=1,
         mem_mb=200,
         sleep_amount=lambda wildcards, attempt: get_sleep_amount(attempt),
     params:
-        url=cobs_url_fct,
+        url=mfur_url_fct,
     shell:
         """
-        scripts/download.sh {params.url} {output.xz} {resources.sleep_amount}
+        scripts/download.sh {params.url} {output.batch} {resources.sleep_amount}
         """
-
 
 ##################################
 ## Processing rules

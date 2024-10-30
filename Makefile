@@ -1,6 +1,6 @@
 .PHONY: \
 	all test help clean cleanall \
-	conda download download_asms download_cobs match map \
+	conda download download_asms download_mfur match map \
 	config report \
 	cluster_slurm cluster_lsf cluster_lsf_test \
 	format checkformat
@@ -72,7 +72,9 @@ clean: ## Clean intermediate search files
 	mv -v .snakemake/log/*.log .snakemake/old_log/ || true
 
 cleanall: clean ## Clean all generated and downloaded files
-	rm -f {asms,cobs}/*.xz{,.tmp}
+	rm -f asms/*.xz{,.tmp}
+	rm -f mfur/*.mfur
+
 
 ####################
 ## Pipeline steps ##
@@ -87,8 +89,11 @@ download: ## Download the assemblies and COBS indexes
 download_asms: ## Download only the assemblies
 	snakemake download_asms_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
 
-download_cobs: ## Download only the COBS indexes
-	snakemake download_cobs_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
+# download_cobs: ## Download only the COBS indexes
+# 	snakemake download_cobs_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
+
+download_mfur: ## Download only the meta-Fulgor indexes
+	snakemake download_mfur_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
 
 match: ## Match queries using COBS (queries -> candidates)
 	scripts/benchmark.py --log logs/benchmarks/match_$(DATETIME).txt "snakemake match $(SMK_PARAMS)"
