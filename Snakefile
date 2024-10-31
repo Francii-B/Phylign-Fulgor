@@ -572,8 +572,9 @@ rule run_mfur:
 
 
 rule translate_matches:
-    """Translate cobs matches.
-
+    # """Translate cobs matches.
+    """Translate mfur matches.
+    
     Output:
         ref - read - matches
     """

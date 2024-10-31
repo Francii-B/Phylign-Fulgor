@@ -15,39 +15,39 @@ import sys
 
 def keep_fname(mfur_fname):
     filename_with_extension = os.path.basename(mfur_fname)  # Remove the path
-    filename_without_extension, _, _, = filename_with_extension.partition(".") # Remove extension (only 1 dot is expected)
+    filename_without_extension, _, _, = filename_with_extension.partition(".") # Remove extension (first dot)
     return "_" + filename_without_extension
 
 
-def process_mfur_output(hits_to_keep): #format the output as 
-    prev_query = -1
+def process_mfur_output(hits_to_keep):
+    """convert mfur output into COBS format
+
+    Tempororary solution to avoid modifications in 'filter_queries.py'
+    """
+    prev_query = ""
     for x in sys.stdin:
         query, filename, score = x.split("\t")
         
-        # 1. Check if matches were found
-        if filename == "NA": #no matches: skip to the next iteration (i.e. next query)
-            print(x, end="")
+        # 1. Check if the line is related to a different query
+        if query != prev_query:
+            print("*" + query, end="") #the n. of matches can be ignored (not used later)
+            prev_query = query
+            i = 0
 
-        else:
-           # 2. Check if the current match is related to the same query of the previous line 
-            if prev_query != query: #re-assign if first line or new query, and restart counter + min score
-                prev_query = query
-                i = 0
-                min_kmers = 0
-            elif prev_query == query: #increase counter otherwise 
-                i += 1
+        # 2. Check if matches were found for the query
+        if filename != "NA": 
+            i += 1 #increase match-counter
+            fname_only = keep_fname(filename) #clean matched filename
 
-        fname_only = keep_fname(filename) #clean matched filename
-
-        # 3. Extract the Top N results (+ties)
-        if i < hits_to_keep:
-            print(query + "\t" + fname_only + "\t" + score, end="")
-        elif i == hits_to_keep:
-            print(query + "\t" + fname_only + "\t" + score, end="")
-            min_kmers = int(score)
-        else:
-            if int(score) == min_kmers:
-                print(query + "\t" + fname_only + "\t" + score, end="")
+            # 3. Extract the Top N results (+ties)
+            if i < hits_to_keep:
+                print(fname_only + "\t" + score, end="")
+            elif i == hits_to_keep:
+                print(fname_only + "\t" + score, end="")
+                min_kmers = int(score)
+            else:
+                if int(score) == min_kmers:
+                    print(fname_only + "\t" + score, end="")
 
 
 def main():
