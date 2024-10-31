@@ -156,8 +156,8 @@ decompression_dir = Path(
 )
 
 #keep_cobs_indexes = config["keep_cobs_indexes"] #mfur indexes are already uncompression
-#predefined_cobs_threads = str(config["cobs_threads"])
-predefined_mfur_threads = str(config["mfur_threads"])
+predefined_cobs_threads = str(config["cobs_threads"])
+#predefined_mfur_threads = str(config["mfur_threads"])
 
 #strictly related to COBS?
 ignore_RAM = False
