@@ -155,7 +155,7 @@ decompression_dir = Path(
     config.get("decompression_dir", "intermediate/02_cobs_decompressed")
 )
 
-#keep_cobs_indexes = config["keep_cobs_indexes"] #mfur indexes are already uncompression
+keep_cobs_indexes = config["keep_cobs_indexes"] #mfur indexes are already uncompression
 predefined_cobs_threads = str(config["cobs_threads"])
 #predefined_mfur_threads = str(config["mfur_threads"])
 
@@ -309,7 +309,7 @@ rule download_asm_batch:
         url=asms_url_fct,
     shell:
         """
-        scripts/download.sh {params.url} {output.xz} {resources.sleep_amount}
+        scripts/download.sh {params.url} {output.xz} {resources.sleep_amount} .tar.xz
         """
 
 
@@ -345,7 +345,7 @@ rule download_mfur_batch:
         url=mfur_url_fct,
     shell:
         """
-        scripts/download.sh {params.url} {output.batch} {resources.sleep_amount}
+        scripts/download.sh {params.url} {output.batch} {resources.sleep_amount} .mfur
         """
 
 ##################################
@@ -478,35 +478,37 @@ rule run_mfur:
     """meta-Fulgor query
     """
     output:
+        mfur_output = temp("intermediate/03_match/{batch}____{qfile}-preprocessed.tsv"),
         match="intermediate/03_match/{batch}____{qfile}.gz",
     input:
-        cobs_index=f"{cobs_dir}/{{batch}}.mfur",
+        mfur_index=f"{mfur_dir}/{{batch}}.mfur",
         fa="intermediate/01_queries_merged/{qfile}.fa"
-    resources: #?
-        max_io_heavy_threads=int(cobs_is_an_IO_heavy_job), 
-        max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
-            wildcards, input, ignore_RAM, streaming
-        ),
-        mem_mb=lambda wildcards, input: int(
-            get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
-            + 1024
-        ),
-    threads: partial_cobs_threads #?
+    # resources: #?
+        # max_io_heavy_threads=int(cobs_is_an_IO_heavy_job), 
+        # max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
+        #     wildcards, input, ignore_RAM, streaming
+        # ),
+        # mem_mb=lambda wildcards, input: int(
+        #     get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
+        #     + 1024
+        # ),
+    threads: 1 #partial_cobs_threads
     params:
         kmer_thres=config["mfur_kmer_thres"],
         nb_best_hits=config["nb_best_hits"],
     priority: 999
-    #conda: 
-    #    "envs/cobs.yaml"
+    conda: 
+        "envs/cobs.yaml"
     shell:
         """
         ./scripts/benchmark.py --log logs/benchmarks/run_mfur/{wildcards.batch}____{wildcards.qfile}.txt \\
-            'fulgor pseudoalign \\
+            './fulgor pseudoalign \\
                     --threshold {params.kmer_thres} \\
                     -t {threads} \\
-                    -i {input.cobs_index} \\
-                    -q {input.fa} \\
-                | ./scripts/postprocess_mfur.py -n {params.nb_best_hits} \\
+                    -i {input.mfur_index} \\
+                    -q {input.fa} --tsv \\
+                    -o {output.mfur_output}; \\
+                cat {output.mfur_output} | ./scripts/postprocess_cobs.py -n {params.nb_best_hits} \\
                 | gzip --fast \\
                 > {output.match}'
         """
