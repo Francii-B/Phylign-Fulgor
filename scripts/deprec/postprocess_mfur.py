@@ -18,7 +18,7 @@ def keep_fname(mfur_fname):
     filename_without_extension, _, _, = filename_with_extension.partition(".") # Remove extension (first dot)
     return "_" + filename_without_extension
 
-
+#convert mfur to COBS output format
 def process_mfur_output(hits_to_keep):
     """convert mfur output into COBS format
 
@@ -30,7 +30,8 @@ def process_mfur_output(hits_to_keep):
         
         # 1. Check if the line is related to a different query
         if query != prev_query:
-            print("*" + query, end="") #the n. of matches can be ignored (not used later)
+            print("*" + query) #the n. of matches can be ignored (not used later)
+            #print("*" + query, end="") #needed only if query-name contains "\n"
             prev_query = query
             i = 0
 
