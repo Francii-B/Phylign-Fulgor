@@ -10,16 +10,17 @@ readonly PROGDIR=$(dirname $0)
 readonly -a ARGS=("$@")
 readonly NARGS="$#"
 
-if [[ $NARGS -ne 3 ]]; then
+if [[ $NARGS -ne 4 ]]; then
 	>&2 echo "Download an xz file with a specificed delay and then verify its consistency"
 	>&2 echo
-	>&2 echo "usage: $PROGNAME url output_file sleep_time"
+	>&2 echo "usage: $PROGNAME url output_file sleep_time file_format"
 	exit 1
 fi
 
 url="$1"
 output="$2"
 sleep_amount="$3"
+file_format="$4"
 
 if [[ "$sleep_amount" -ne 0 ]]; then
 	2>&1 echo "Detected previous failed downloads, probably Zenodo blocking downloads."
@@ -29,5 +30,9 @@ if [[ "$sleep_amount" -ne 0 ]]; then
 fi
 2>&1 echo "Downloading $url to ${output}"
 curl -s -L "${url}"  > "${output}"
-"$PROGDIR/test_xz.py" "${output}"
-2>&1 echo "Verified that ${output} is consistent as an xz file"
+
+
+if [[ "$file_format" == ".tar.xz" ]]; then
+	"$PROGDIR/test_xz.py" "${output}"
+	2>&1 echo "Verified that ${output} is consistent as an xz file"
+fi
