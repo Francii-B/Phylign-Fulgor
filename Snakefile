@@ -289,7 +289,15 @@ rule map:
         f"output/{get_filename_for_all_queries()}.sam_summary.gz",
         f"output/{get_filename_for_all_queries()}.sam_summary.stats",
 
-
+rule fulgor_config:
+    """Install Fulgor dependencies and compile
+    """
+    conda:
+        "envs/fulgor_env.yml"
+    shell:
+        """
+        ./scripts/submodule.sh
+        """
 ##################################
 ## Download rules
 ##################################
@@ -497,12 +505,12 @@ rule run_mfur:
         kmer_thres=config["mfur_kmer_thres"],
         nb_best_hits=config["nb_best_hits"],
     priority: 999
-    conda: 
-        "envs/cobs.yaml"
+    # conda: 
+    #     "envs/cobs.yaml"
     shell:
         """
         ./scripts/benchmark.py --log logs/benchmarks/run_mfur/{wildcards.batch}____{wildcards.qfile}.txt \\
-            './fulgor pseudoalign \\
+            './external/modified-Fulgor/build/fulgor pseudoalign \\
                     --threshold {params.kmer_thres} \\
                     -t {threads} \\
                     -i {input.mfur_index} \\

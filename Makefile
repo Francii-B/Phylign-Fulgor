@@ -1,5 +1,5 @@
 .PHONY: \
-	all test help clean cleanall \
+	all test help clean cleanall fulgor_config\
 	conda download download_asms download_mfur match map \
 	config report \
 	cluster_slurm cluster_lsf cluster_lsf_test \
@@ -75,6 +75,9 @@ cleanall: clean ## Clean all generated and downloaded files
 	rm -f asms/*.xz{,.tmp}
 	rm -f mfur/*.mfur
 
+fulgor_config: ##Install Fulgor dependencies and compile
+	git submodule update --init --recursive
+	snakemake fulgor_config $(SMK_PARAMS)
 
 ####################
 ## Pipeline steps ##
