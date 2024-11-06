@@ -1,0 +1,3 @@
+[submodule "external/modified-Fulgor"]
+	path = external/modified-Fulgor
+	url = git@github.com:Francii-B/modified-Fulgor.git
