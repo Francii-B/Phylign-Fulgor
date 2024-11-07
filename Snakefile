@@ -46,7 +46,7 @@ def get_index_metadata(wildcards, input):
         for line in decompressed_indexes_sizes_fh:
             cobs_index, size_in_bytes, xz_decompress_RAM = line.strip().split()
             batch_for_cobs_index = cobs_index.split("/")[-1].replace(
-                ".cobs_classic.xz", ""
+                ".mfur", ""
             )
             size_in_bytes = int(size_in_bytes)
             xz_decompress_RAM = int(xz_decompress_RAM)
@@ -71,16 +71,16 @@ def get_xz_decompress_RAM_in_MB(wildcards, input):
 
 
 def get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming):
-    if ignore_RAM:
-        return 0
-    if streaming:
-        # then we are decompressing and running cobs at the same time
-        xz_decompression_RAM_usage_in_MB = get_xz_decompress_RAM_in_MB(wildcards, input)
-    else:
-        xz_decompression_RAM_usage_in_MB = 0
+    #if ignore_RAM:
+    #    return 0
+    #if streaming:
+    #    # then we are decompressing and running cobs at the same time
+    #    xz_decompression_RAM_usage_in_MB = get_xz_decompress_RAM_in_MB(wildcards, input)
+    #else:
+        #xz_decompression_RAM_usage_in_MB = 0
     size_in_bytes = get_uncompressed_batch_size(wildcards, input)
     size_in_MB = int(size_in_bytes / 1024 / 1024) + 1
-    return size_in_MB + xz_decompression_RAM_usage_in_MB
+    return size_in_MB #+ xz_decompression_RAM_usage_in_MB
 
 
 def get_max_number_of_COBS_threads_from_auto_string(auto_string):
@@ -490,22 +490,23 @@ rule run_mfur:
         match="intermediate/03_match/{batch}____{qfile}.gz",
     input:
         mfur_index=f"{mfur_dir}/{{batch}}.mfur",
-        fa="intermediate/01_queries_merged/{qfile}.fa"
-    # resources: #?
-        # max_io_heavy_threads=int(cobs_is_an_IO_heavy_job), 
-        # max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
-        #     wildcards, input, ignore_RAM, streaming
-        # ),
-        # mem_mb=lambda wildcards, input: int(
-        #     get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
-        #     + 1024
-        # ),
+        fa="intermediate/01_queries_merged/{qfile}.fa",
+        decompressed_indexes_sizes="data/decompressed_indexes_sizes.txt",
+    resources:
+        max_io_heavy_threads=int(cobs_is_an_IO_heavy_job),
+        max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
+             wildcards, input, ignore_RAM, streaming
+         ),
+        mem_mb=lambda wildcards, input: int(
+             get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
+             + 1024
+        ),
     threads: 1 #partial_cobs_threads
     params:
         kmer_thres=config["mfur_kmer_thres"],
         nb_best_hits=config["nb_best_hits"],
     priority: 999
-    # conda: 
+    # conda:
     #     "envs/cobs.yaml"
     shell:
         """
@@ -584,7 +585,7 @@ rule run_mfur:
 rule translate_matches:
     # """Translate cobs matches.
     """Translate mfur matches.
-    
+
     Output:
         ref - read - matches
     """
