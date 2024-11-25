@@ -1,9 +1,13 @@
-# Phylign – alignment to all pre-2019 bacteria (former MOF-Search)
+# Phylign - Fulgor: alignment to all pre-2019 bacteria
+
+
+🔴 This version of [Phylign](https://github.com/karel-brinda/Phylign) replaces [COBS](https://github.com/iqbal-lab-org/cobs) with [modified-Fulgor](https://github.com/Francii-B/modified-Fulgor), a customized version of  [Fulgor](https://github.com/jermp/fulgor).
 
 <p>
 <a href="https://brinda.eu/mof">
     <img src="docs/logo_wbg.svg" align="left" style="width:100px;" />
 </a>
+
 Alignment to
 <a href="https://doi.org/10.1371/journal.pbio.3001421">all pre-2019 bacteria from ENA</a>
 on standard desktop and laptops computers.
@@ -117,7 +121,6 @@ These tools are typically included in standard \*nix installations. However, in
 minimal setups (e.g., virtualization, continuous integration), you might need
 to install them using the corresponding package managers.
 
-
 ## 3. Installation
 
 ### 3a) Step 1: Install dependencies
@@ -154,7 +157,32 @@ Clone the Phylign repository from GitHub and navigate into the directory:
 ```
 
 
-### 3c) Step 3: Run a simple test
+### 3c) Step 3: Compile modified-Fulgor
+
+Download modified-Fulgor as a submodule of Phylign:
+
+```
+git submodule update --init --recursive
+```
+Then, make sure to have installed [Rust](https://www.rust-lang.org/tools/install):
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+Once installed, run
+```
+make fulgor_config
+```
+ to compile modified-Fulgor. 	Alternatively, it is possible to compile it manually. In this case, make sure that `zlib`, `gcc` (on Linux) or `clang` (on MacOS) and [`CMake`](https://cmake.org/) are installed before proceeding:
+ ```
+cd ./external/modified-Fulgor/
+mkdir build && cd build
+cmake ..
+make -j
+ ```
+
+If compiled successfully, you can procede to the next step.
+
+### 3d) Step 4: Run a simple test
 
 Run the following command to ensure the pipeline works for sample queries and
 3 batches (this will also install all additional dependencies using Conda):
@@ -171,7 +199,7 @@ message:
 ```
 
 
-### 3d) Step 4: Download the database
+### 3e) Step 5: Download the database
 
 Download all phylogenetically compressed assemblies and COBS *k*-mer indexes
 for the [661k-HQ collection](https://doi.org/10.1371/journal.pbio.3001421) by:
