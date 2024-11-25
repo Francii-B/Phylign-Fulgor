@@ -1,7 +1,7 @@
 # Phylign - Fulgor: alignment to all pre-2019 bacteria
 
 
-🔴 This version of [Phylign](https://github.com/karel-brinda/Phylign) replaces [COBS](https://github.com/iqbal-lab-org/cobs) with [modified-Fulgor](https://github.com/Francii-B/modified-Fulgor), a customized version of  [Fulgor](https://github.com/jermp/fulgor).
+🔴 This version of [Phylign](https://github.com/karel-brinda/Phylign) replaces [COBS](https://github.com/iqbal-lab-org/cobs) with [modified-Fulgor](https://github.com/Francii-B/modified-Fulgor), a customized version of  [Fulgor](https://github.com/jermp/fulgor). 🔴
 
 <p>
 <a href="https://brinda.eu/mof">
@@ -164,15 +164,15 @@ Download modified-Fulgor as a submodule of Phylign:
 ```
 git submodule update --init --recursive
 ```
-Then, make sure to have installed [Rust](https://www.rust-lang.org/tools/install):
+If [Rust](https://www.rust-lang.org/tools/install) is not installed, run:
 ```
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
-Once installed, run
+Then, compile modified-Fulgor:
 ```
 make fulgor_config
 ```
- to compile modified-Fulgor. 	Alternatively, it is possible to compile it manually. In this case, make sure that `zlib`, `gcc` (on Linux) or `clang` (on MacOS) and [`CMake`](https://cmake.org/) are installed before proceeding:
+<u>Alternatively</u>, it is possible to compile modified-Fulgor manually. In this case, make sure that `zlib`, `gcc` (on Linux) or `clang` (on MacOS) and [`CMake`](https://cmake.org/) are installed before proceeding:
  ```
 cd ./external/modified-Fulgor/
 mkdir build && cd build
