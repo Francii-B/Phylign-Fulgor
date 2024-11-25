@@ -277,13 +277,14 @@ Here's a list of all implemented commands (to be executed as `make {command}`):
    help               Print help messages
    clean              Clean intermediate search files
    cleanall           Clean all generated and downloaded files
+   fulgor_config      Install Fulgor dependencies and compile
 ##################
 # Pipeline steps #
 ##################
    conda              Create the conda environments
    download           Download the assemblies and COBS indexes
    download_asms      Download only the assemblies
-   download_cobs      Download only the COBS indexes
+   download_mfur      Download only the meta-Fulgor indexes
    match              Match queries using COBS (queries -> candidates)
    map                Map candidates to assemblies (candidates -> alignments)
 #############
