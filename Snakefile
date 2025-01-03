@@ -515,7 +515,7 @@ rule run_mfur:
                     --threshold {params.kmer_thres} \\
                     -t {threads} \\
                     -i {input.mfur_index} \\
-                    -q {input.fa} --tsv \\
+                    -q {input.fa} --cobs \\
                     -o {output.mfur_output}; \\
                 cat {output.mfur_output} | ./scripts/postprocess_cobs.py -n {params.nb_best_hits} \\
                 | gzip --fast \\
