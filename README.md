@@ -96,7 +96,7 @@ and visit the [associated website](https://brinda.eu/mof).
 
 Phylign requires a standard desktop or laptop computer with an \*nix system,
 and it can also run on a cluster. The minimal hardware requirements are **12 GB
-RAM** and approximately **120 GB of disk space** (102 GB for the database and
+RAM** and approximately **140 GB of disk space** (120 GB for the database and
 a margin for intermediate files).
 
 
@@ -182,7 +182,7 @@ Modified-Fulgor can be compiled using <u>one</u> between the next two options:
     cmake ..
     make -j
     ```
-If the compilation was successful, you can procede to the next step. If any errors occur, consult the issue sections of [Fulgor](https://github.com/jermp/fulgor/issues) and [modified-Fulgor](https://github.com/Francii-B/modified-Fulgor/issues) see if they have already been reported.
+If the compilation was successful, you can procede to the next step. If any errors occur, consult the issues sections of [Fulgor](https://github.com/jermp/fulgor/issues) and [modified-Fulgor](https://github.com/Francii-B/modified-Fulgor/issues) to see if they have already been reported.
 
 ### 3d) Step 4: Run a simple test
 
