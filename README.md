@@ -121,6 +121,11 @@ These tools are typically included in standard \*nix installations. However, in
 minimal setups (e.g., virtualization, continuous integration), you might need
 to install them using the corresponding package managers.
 
+Concerning modified-Fulgor,  it requires [Rust](https://www.rust-lang.org/tools/install) to be installed:
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
 ## 3. Installation
 
 ### 3a) Step 1: Install dependencies
@@ -152,8 +157,8 @@ conda install -y -c bioconda -c conda-forge \
 Clone the Phylign repository from GitHub and navigate into the directory:
 
 ```bash
- git clone https://github.com/karel-brinda/phylign
- cd phylign
+ git clone https://github.com/Francii-B/Phylign-Fulgor
+ cd Phylign-Fulgor
 ```
 
 
@@ -164,23 +169,20 @@ Download modified-Fulgor as a submodule of Phylign:
 ```
 git submodule update --init --recursive
 ```
-If [Rust](https://www.rust-lang.org/tools/install) is not installed, run:
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-Then, compile modified-Fulgor:
-```
-make fulgor_config
-```
-<u>Alternatively</u>, it is possible to compile modified-Fulgor manually. In this case, make sure that `zlib`, `gcc` (on Linux) or `clang` (on MacOS) and [`CMake`](https://cmake.org/) are installed before proceeding:
- ```
-cd ./external/modified-Fulgor/
-mkdir build && cd build
-cmake ..
-make -j
- ```
 
-If compiled successfully, you can procede to the next step.
+Modified-Fulgor can be compiled using <u>one</u> between the next two options:
+*  **```make``` compilation**
+    ```
+    make fulgor_config
+    ```
+* **manual compilation**. In this case, make sure that `zlib`, `gcc` (on Linux) or `clang` (on MacOS) and [`CMake`](https://cmake.org/) are installed before proceeding:
+    ```
+    cd ./external/modified-Fulgor/
+    mkdir build && cd build
+    cmake ..
+    make -j
+    ```
+If the compilation was successful, you can procede to the next step. If any errors occur, consult the issue sections of [Fulgor](https://github.com/jermp/fulgor/issues) and [modified-Fulgor](https://github.com/Francii-B/modified-Fulgor/issues) see if they have already been reported.
 
 ### 3d) Step 4: Run a simple test
 
@@ -201,20 +203,18 @@ message:
 
 ### 3e) Step 5: Download the database
 
-Download all phylogenetically compressed assemblies and COBS *k*-mer indexes
+Download all phylogenetically compressed assemblies and meta-Fulgor *k*-mer indexes
 for the [661k-HQ collection](https://doi.org/10.1371/journal.pbio.3001421) by:
 
 ```bash
 make download
 ```
 
-The downloaded files will be located in the `asms/` and `cobs/` directories.
+The downloaded files will be located in the `asms/` and `mfur/` directories.
 
 
 *Notes:*
-* The compressed assemblies comprise *all* the genomes from the 661k
-  collection.The COBS indexes comprise only those genomes that passed quality
-  control.
+* The compressed assemblies comprise <u>*all*</u> the genomes from the 661k collection. The meta-Fulgor indexes comprise only those genomes that passed quality control.
 
 
 ## 4. Usage
@@ -238,8 +238,7 @@ available options are documented directly there.
 
 ### 4c) Step 3: Clean up intermediate files
 
-Run `make clean` to clean intermediate files from the previous runs. This
-includes COBS matching files, alignment files, and various reports.
+Run `make clean` to clean intermediate files from the previous runs. This includes Fulgor matching files, alignment files, and various reports.
 
 ### 4d) Step 4: Run the pipeline
 
@@ -269,40 +268,41 @@ Here's a list of all implemented commands (to be executed as `make {command}`):
 
 
 ```bash
-####################
-# General commands #
-####################
+####################  
+# General commands #  
+####################  
    all                Run everything (the default rule)
    test               Quick test using 3 batches
    help               Print help messages
    clean              Clean intermediate search files
    cleanall           Clean all generated and downloaded files
    fulgor_config      Install Fulgor dependencies and compile
-##################
-# Pipeline steps #
-##################
+##################    
+# Pipeline steps #    
+##################    
    conda              Create the conda environments
-   download           Download the assemblies and COBS indexes
+   download           Download the assemblies and meta-Fulgor indexes
    download_asms      Download only the assemblies
    download_mfur      Download only the meta-Fulgor indexes
-   match              Match queries using COBS (queries -> candidates)
+   match              Match queries using Fulgor (queries -> candidates)
    map                Map candidates to assemblies (candidates -> alignments)
-#############
-# Reporting #
-#############
+#############         
+# Reporting #         
+#############         
    config             Print configuration without comments
    report             Generate Snakemake report
-###########
-# Cluster #
-###########
+###########           
+# Cluster #           
+###########           
    cluster_slurm      Submit to a SLURM cluster
    cluster_lsf        Submit to LSF cluster
    cluster_lsf_test   Submit the test pipeline to LSF cluster
-##################
-# For developers #
-##################
+##################    
+# For developers #    
+##################    
    format             Reformat Python and Snakemake files
    checkformat        Check source code format
+
 ```
 
 *Note:* `make format` requires
@@ -313,14 +313,12 @@ Here's a list of all implemented commands (to be executed as `make {command}`):
 
 ### 5b) Directories
 
-* `asms/`, `cobs/` Downloaded assemblies and COBS indexes
+* `asms/`, `mfur/` Downloaded assemblies and COBS indexes
 * `input/` Queries, to be provided within one or more FASTA/FASTQ files,
   possibly gzipped (`.fa`)
 * `intermediate/` Intermediate files
    * `00_queries_preprocessed/` Preprocessed queries
    * `01_queries_merged/` Merged queries
-   * `02_cobs_decompressed/` Decompressed COBS indexes (temporary, used only in
-     the disk mode is used)
    * `03_match/` COBS matches
    * `04_filter/` Filtered candidates
    * `05_map/` Minimap2 alignments
