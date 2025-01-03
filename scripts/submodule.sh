@@ -13,13 +13,13 @@ then
 	mkdir external/modified-Fulgor/build
 	cd external/modified-Fulgor/build
 	cmake ..
-	make -j
-	if [ ! -f external/modified-Fulgor/build/fulgor ]; 
-	then
-		echo "Fulgor compiled correctly"
+	
+	if make -j ; then
+    	echo "Fulgor compiled correctly"
 	else
-		echo "Fulgor DID NOT compile correctly"
+    	echo "Fulgor DID NOT compile correctly"
 	fi
+	
 else
 	echo "Fulgor already exist"
     
