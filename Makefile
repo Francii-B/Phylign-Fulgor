@@ -86,7 +86,7 @@ fulgor_config: ##Install Fulgor dependencies and compile
 conda: ## Create the conda environments
 	snakemake $(SMK_PARAMS) --conda-create-envs-only
 
-download: ## Download the assemblies and COBS indexes
+download: ## Download the assemblies and meta-Fulgor indexes
 	snakemake download $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
 
 download_asms: ## Download only the assemblies
@@ -98,7 +98,7 @@ download_asms: ## Download only the assemblies
 download_mfur: ## Download only the meta-Fulgor indexes
 	snakemake download_mfur_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
 
-match: ## Match queries using COBS (queries -> candidates)
+match: ## Match queries using Fulgor (queries -> candidates)
 	scripts/benchmark.py --log logs/benchmarks/match_$(DATETIME).txt "snakemake match $(SMK_PARAMS)"
 
 map: ## Map candidates to assemblies (candidates -> alignments)
