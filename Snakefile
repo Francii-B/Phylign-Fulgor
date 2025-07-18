@@ -131,7 +131,7 @@ def get_index_load_mode():
     return index_load_mode
 
 def get_ATB_asms_url():
-    with open("data/ATB_asms_download_link.tsv") as fin:
+    with open("data/atb_asms_download_link.tsv") as fin:
         return dict(line.strip().split('\t', 1) for line in fin)
 
 
@@ -197,6 +197,8 @@ wildcard_constraints:
 
 #     ruleorder: decompress_and_run_cobs > decompress_cobs > run_cobs
 
+#get the url for downloaloding the ATB asms batches
+atb_asms_url = get_ATB_asms_url()
 
 ##################################
 ## Download params
@@ -250,10 +252,8 @@ def mfur_url_fct(wildcards): #url to the HQ ATB indexes
 #    asm_url = f"https://zenodo.org/record/{asm_zenodo}/files/{wildcards.batch}.tar.xz"
 #    return asm_url
 
-def asms_url_fct(wildcards):
-    asm_zenodo = 4602622
-    asm_url = f"https://zenodo.org/record/{asm_zenodo}/files/{wildcards.batch}.tar.xz"
-    return asm_url
+def asms_url_fct(wildcards, atb_asms_url = atb_asms_url):
+    return atb_asms_url[f"{wildcards.batch}.tar.xz"]
 
 
 
@@ -333,6 +333,25 @@ rule fulgor_config:
 ##################################
 ## Download rules
 ##################################
+# rule download_asm_batch:
+#     """Download compressed assemblies
+#     """
+#     output:
+#         xz=f"{assemblies_dir}/{{batch}}.tar.xz",
+#     threads: 1
+#     resources:
+#         max_download_threads=1,
+#         mem_mb=200,
+#         # note: sleep_amount has to be defined as a resource
+#         # note: I tried a hack to route it to params, but it did not work, see https://github.com/snakemake/snakemake/issues/499
+#         sleep_amount=lambda wildcards, attempt: get_sleep_amount(attempt),
+#     params:
+#         url=asms_url_fct,
+#     shell:
+#         """
+#         scripts/download.sh {params.url} {output.xz} {resources.sleep_amount} .tar.xz
+        # """
+
 rule download_asm_batch:
     """Download compressed assemblies
     """
