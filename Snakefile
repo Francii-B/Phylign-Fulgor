@@ -130,6 +130,10 @@ def get_index_load_mode():
     ), f"index_load_mode must be one of {allowed_index_load_modes}"
     return index_load_mode
 
+def get_ATB_asms_url():
+    with open("data/ATB_asms_download_link.tsv") as fin:
+        return dict(line.strip().split('\t', 1) for line in fin)
+
 
 ##################################
 ## Initialization
@@ -182,8 +186,8 @@ elif index_load_mode == "mmap-disk":
 
 
 wildcard_constraints:
-    batch=".+__\d\d",
-
+#    batch=".+__\d\d",
+    batch=".+\.batch\.\d{1,3}",
 
 # if keep_cobs_indexes:
 
@@ -207,22 +211,50 @@ wildcard_constraints:
 #         return f"https://zenodo.org/record/6845083/files/{x}.cobs_classic.xz"
 
 
-def mfur_url_fct(wildcards): #url to the HQ indexes
-    x = wildcards.batch
-    if x <= "dustbin__15":
-        return f"https://zenodo.org/record/14002973/files/{x}.mfur" #part1
-    elif x <= "mycobacterium_kansasii__01" :
-        return f"https://zenodo.org/record/14002975/files/{x}.mfur" #part2
-    elif x <= "salmonella_enterica__33" :
-        return f"https://zenodo.org/record/14006705/files/{x}.mfur" #part3
-    else :
-        return f"https://zenodo.org/record/14006707/files/{x}.mfur" #part4
+# def mfur_url_fct(wildcards): #url to the HQ indexes
+#     x = wildcards.batch
+#     if x <= "dustbin__15":
+#         return f"https://zenodo.org/record/14002973/files/{x}.mfur" #part1
+#     elif x <= "mycobacterium_kansasii__01" :
+#         return f"https://zenodo.org/record/14002975/files/{x}.mfur" #part2
+#     elif x <= "salmonella_enterica__33" :
+#         return f"https://zenodo.org/record/14006705/files/{x}.mfur" #part3
+#     else :
+#         return f"https://zenodo.org/record/14006707/files/{x}.mfur" #part4
 
+        
+def mfur_url_fct(wildcards): #url to the HQ ATB indexes
+    x = wildcards.batch
+    batch_id = int(wildcards.batch.split(".")[-1]) #extract the batch number (valid only for ATB r0.2)
+    if batch_id <= 100 :
+        return f"https://zenodo.org/record/15994164/files/{x}.mfur" #part1
+    elif batch_id <= 134 :
+        return f"https://zenodo.org/record/15994228/files/{x}.mfur" #part2
+    elif batch_id <= 225 :
+        return f"https://zenodo.org/record/15994270/files/{x}.mfur" #part3
+    elif batch_id <= 325:
+        return f"https://zenodo.org/record/15994318/files/{x}.mfur" #part4
+    elif batch_id <= 425 :
+        return f"https://zenodo.org/record/15994445/files/{x}.mfur" #part5
+    elif batch_id <= 525 :
+        return f"https://zenodo.org/record/15994505/files/{x}.mfur" #part6
+    elif batch_id <= 625 :
+        return f"https://zenodo.org/record/15994553/files/{x}.mfur" #part7
+    else :
+        return f"https://zenodo.org/record/15994624/files/{x}.mfur" #part8
+
+
+
+#def asms_url_fct(wildcards):
+#    asm_zenodo = 4602622
+#    asm_url = f"https://zenodo.org/record/{asm_zenodo}/files/{wildcards.batch}.tar.xz"
+#    return asm_url
 
 def asms_url_fct(wildcards):
     asm_zenodo = 4602622
     asm_url = f"https://zenodo.org/record/{asm_zenodo}/files/{wildcards.batch}.tar.xz"
     return asm_url
+
 
 
 def get_sleep_amount(attempt):
@@ -491,7 +523,8 @@ rule run_mfur:
     input:
         mfur_index=f"{mfur_dir}/{{batch}}.mfur",
         fa="intermediate/01_queries_merged/{qfile}.fa",
-        decompressed_indexes_sizes="data/decompressed_indexes_sizes.txt",
+        #decompressed_indexes_sizes="data/decompressed_indexes_sizes.txt",
+        decompressed_indexes_sizes="data/decompressed_indexes_sizes_fulgor_ATB.txt",
     resources:
         max_io_heavy_threads=int(cobs_is_an_IO_heavy_job),
         max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
