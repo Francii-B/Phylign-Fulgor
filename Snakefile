@@ -688,7 +688,7 @@ rule batch_align_minimap2:
         mem_mb=lambda wildcards, attempt: 1000 * 2 ** (attempt),  # 1GB, 2GB, 4GB, 8GB...
     shell:
         """
-        xzcat data/661k_batches.txt.xz \\
+        xzcat data/ATB_batches.txt.xz \\
             | grep {wildcards.batch} \\
             | cut -f2 \\
             > {params.refs_tmp}
