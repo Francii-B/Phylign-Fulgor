@@ -31,15 +31,15 @@ all within only several hours.
 <!-- vim-markdown-toc GFM -->
 
 * [1. Introduction](#1-introduction)
-  * [Citation](#citation)
 * [2. Requirements](#2-requirements)
   * [2a) Hardware](#2a-hardware)
   * [2b) Dependencies](#2b-dependencies)
 * [3. Installation](#3-installation)
   * [3a) Step 1: Install dependencies](#3a-step-1-install-dependencies)
   * [3b) Step 2: Clone the repository](#3b-step-2-clone-the-repository)
-  * [3c) Step 3: Run a simple test](#3c-step-3-run-a-simple-test)
-  * [3d) Step 4: Download the database](#3d-step-4-download-the-database)
+  * [3c) Step 3: Download modified-Fulgor](#3c-step-3-download-modified-fulgor)
+  * [3d) Step 4: Run a simple test](#3d-step-4-run-a-simple-test)
+  * [3e) Step 5: Download the database](#3e-step-5-download-the-database)
 * [4. Usage](#4-usage)
   * [4a) Step 1: Copy or symlink your queries](#4a-step-1-copy-or-symlink-your-queries)
   * [4b) Step 2: Adjust configuration](#4b-step-2-adjust-configuration)
@@ -69,25 +69,13 @@ genome collections using existing algorithms and data structures.
 In short, input data are reorganized according to the topology of the estimated
 phylogenies, which makes data highly locally compressible even using basic
 techniques. Existing software packages for compression, indexing, and search
-- in this case [XZ](https://tukaani.org/xz/),
-[COBS](https://github.com/iqbal-lab-org/cobs), and
+- in this case [Fulgor](https://github.com/jermp/fulgor) and
 [Minimap2](https://github.com/lh3/minimap2) - are then used as low-level tools.
+
 The resulting performance gains come from a wide range of benefits of
 phylogenetic compression, including easy parallelization, small memory
 requirements, small database size, better memory locality, and better branch
 prediction.
-
-For more information about phylogenetic compression and the implementation
-details of Phylign, see the [corresponding
-paper](https://www.biorxiv.org/content/10.1101/2023.04.15.536996v2) (including
-its [supplementary
-material](https://www.biorxiv.org/content/biorxiv/early/2023/04/18/2023.04.15.536996/DC1/embed/media-1.pdf)
-and visit the [associated website](https://brinda.eu/mof).
-
-
-### Citation
-
-> K. Břinda, L. Lima, S. Pignotti, N. Quinones-Olvera, K. Salikhov, R. Chikhi, G. Kucherov, Z. Iqbal, and M. Baym. **[Efficient and Robust Search of Microbial Genomes via Phylogenetic Compression.](https://doi.org/10.1101/2023.04.15.536996)** *bioRxiv* 2023.04.15.536996, 2023. https://doi.org/10.1101/2023.04.15.536996
 
 
 ## 2. Requirements
@@ -373,4 +361,4 @@ quite light and usually start running as soon as they are scheduled.
 ## 7. Contacts
 
 * [Karel Brinda](https://brinda.eu) \<karel.brinda@inria.fr\>
-* [Francesca Brunetti](https://github.com/Francii-B) \<francesca.brunetti@uniroma1.it\>
+* [Francesca Brunetti](https://francii-b.github.io/) \<francesca.brunetti@uniroma1.it\>
