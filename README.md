@@ -8,8 +8,8 @@
     <img src="docs/logo_wbg.svg" align="left" style="width:100px;" />
 </a>
 
-Alignment to
-<a href="https://doi.org/10.1371/journal.pbio.3001421">all pre-2019 bacteria from ENA</a>
+Alignment to the
+<a href="https://doi.org/10.1101/2024.03.08.584059">AllTheBacteria (ATB) collection</a>
 on standard desktop and laptops computers.
 Phylign uses
 <a href="https://brinda.eu/mof">
@@ -112,6 +112,11 @@ the following packages:
 * [Snakemake](https://snakemake.github.io) (>=6.2.0)
 * [Mamba](https://mamba.readthedocs.io/) (>= 0.20.0) - optional, but recommended
 
+* [Rust](https://www.rust-lang.org/tools/install)
+  ```
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  ```
+
 Additionally, Phylign uses standard Unix tools like
 [GNU Make](https://www.gnu.org/software/make/),
 [cURL](https://curl.se/),
@@ -121,10 +126,6 @@ These tools are typically included in standard \*nix installations. However, in
 minimal setups (e.g., virtualization, continuous integration), you might need
 to install them using the corresponding package managers.
 
-Concerning modified-Fulgor,  it requires [Rust](https://www.rust-lang.org/tools/install) to be installed:
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
 
 ## 3. Installation
 
@@ -154,35 +155,25 @@ conda install -y -c bioconda -c conda-forge \
 
 ### 3b) Step 2: Clone the repository
 
-Clone the Phylign repository from GitHub and navigate into the directory:
-
-```bash
- git clone https://github.com/Francii-B/Phylign-Fulgor
- cd Phylign-Fulgor
+Clone the repository (ATB branch):
 ```
-
-
-### 3c) Step 3: Compile modified-Fulgor
-
-Download modified-Fulgor as a submodule of Phylign:
-
+git clone -b ATB https://github.com/Francii-B/Phylign-Fulgor
+cd Phylign-Fulgor
+```
+Download all the submodules:
 ```
 git submodule update --init --recursive
 ```
+Then, make sure that ```ggcat``` submodule inside modified-Fulgor uses ```time``` v.0.3.37:
+  1. Open ```./external/modified-Fulgor/external/ggcat/libs-crates/dynamic-dispatch-rs/Cargo.toml``` and add ```time = "0.3.37"``` under the ```[dependencies]``` section. 
+  2. Run ```cargo add --package time``` inside ```./external/modified-Fulgor/external/ggcat/libs-crates/dynamic-dispatch-rs```
 
-Modified-Fulgor can be compiled using <u>one</u> between the next two options:
-*  **```make``` compilation**
-    ```
-    make fulgor_config
-    ```
-* **manual compilation**. In this case, make sure that `zlib`, `gcc` (on Linux) or `clang` (on MacOS) and [`CMake`](https://cmake.org/) are installed before proceeding:
-    ```
-    cd ./external/modified-Fulgor/
-    mkdir build && cd build
-    cmake ..
-    make -j
-    ```
-If the compilation was successful, you can procede to the next step. If any errors occur, consult the issues sections of [Fulgor](https://github.com/jermp/fulgor/issues) and [modified-Fulgor](https://github.com/Francii-B/modified-Fulgor/issues) to see if they have already been reported.
+### 3c) Step 3: Download modified-Fulgor
+
+```
+mkdir ./external/modified-Fulgor/build
+```
+Download in this directory the [modified-Fulgor binary file](https://github.com/Francii-B/modified-Fulgor/releases/tag/v2.1.0) and rename the file as ```fulgor```.
 
 ### 3d) Step 4: Run a simple test
 
@@ -204,7 +195,7 @@ message:
 ### 3e) Step 5: Download the database
 
 Download all phylogenetically compressed assemblies and meta-Fulgor *k*-mer indexes
-for the [661k-HQ collection](https://doi.org/10.1371/journal.pbio.3001421) by:
+for the [ATB-HQ collection](https://doi.org/10.1101/2024.03.08.584059) by:
 
 ```bash
 make download
@@ -214,7 +205,7 @@ The downloaded files will be located in the `asms/` and `mfur/` directories.
 
 
 *Notes:*
-* The compressed assemblies comprise <u>*all*</u> the genomes from the 661k collection. The meta-Fulgor indexes comprise only those genomes that passed quality control.
+* The compressed assemblies comprise <u>*all*</u> the genomes from the ATB collection. The meta-Fulgor indexes comprise only those genomes that passed quality control.
 
 
 ## 4. Usage
@@ -276,7 +267,6 @@ Here's a list of all implemented commands (to be executed as `make {command}`):
    help               Print help messages
    clean              Clean intermediate search files
    cleanall           Clean all generated and downloaded files
-   fulgor_config      Install Fulgor dependencies and compile
 ##################    
 # Pipeline steps #    
 ##################    
@@ -383,4 +373,4 @@ quite light and usually start running as soon as they are scheduled.
 ## 7. Contacts
 
 * [Karel Brinda](https://brinda.eu) \<karel.brinda@inria.fr\>
-* [Leandro Lima](https://github.com/leoisl) \<leandro@ebi.ac.uk\>
+* [Francesca Brunetti](https://github.com/Francii-B) \<francesca.brunetti@uniroma1.it\>
