@@ -1,4 +1,4 @@
-# Phylign - Fulgor: alignment to all pre-2019 bacteria
+# Phylign-Fulgor: alignment to the 661k and AllTheBacteria collection
 
 
 🔴 This version of [Phylign](https://github.com/karel-brinda/Phylign) replaces [COBS](https://github.com/iqbal-lab-org/cobs) with [modified-Fulgor](https://github.com/Francii-B/modified-Fulgor), a customized version of  [Fulgor](https://github.com/jermp/fulgor). 🔴
@@ -9,7 +9,8 @@
 </a>
 
 Alignment to the
-<a href="https://doi.org/10.1101/2024.03.08.584059">AllTheBacteria (ATB) collection</a>
+<a href="https://doi.org/10.1371/journal.pbio.3001421"> 661k </a> and  
+<a href="https://doi.org/10.1101/2024.03.08.584059">AllTheBacteria (ATB)</a> collections 
 on standard desktop and laptops computers.
 Phylign uses
 <a href="https://brinda.eu/mof">
@@ -20,11 +21,18 @@ to align batches of queries to them by
 all within only several hours.
 </p><br/>
 
+**Available Branches and Supplementary Material:**
+- <a href="https://github.com/Francii-B/Phylign-Fulgor/">**Main branch** </a> : Perform alignment to the
+<a href="https://doi.org/10.1371/journal.pbio.3001421"> 661k </a> collection.
+- <a href="https://github.com/Francii-B/Phylign-Fulgor/tree/ATB">**ATB branch** </a> : Perform alignment to the
+<a href="https://doi.org/10.1101/2024.03.08.584059"> ATB </a> collection.
+ - <a href="https://github.com/Francii-B/optimized-kmer-search-supplement-material"> **Supplementary repository** </a>: Contains the supplementary material for the paper <i>"Optimized k-mer search across millions of bacterial genomes on laptops"</i>.
+
 [![Info](https://img.shields.io/badge/Project-Info-blue)](https://brinda.eu/mof)
-[![Paper DOI](https://img.shields.io/badge/paper-10.1101/2023.04.15.536996-14dc3d.svg)](https://doi.org/10.1101/2023.04.15.536996)
+<!-- [![Paper DOI](https://img.shields.io/badge/paper-10.1101/2023.04.15.536996-14dc3d.svg)](https://doi.org/10.1101/2023.04.15.536996)
 [![GitHub release](https://img.shields.io/github/release/karel-brinda/phylign.svg)](https://github.com/karel-brinda/phylign/releases/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10828248.svg)](https://doi.org/10.5281/zenodo.10828248)
-[![CI Tests](https://github.com/karel-brinda/phylign/actions/workflows/ci.yaml/badge.svg)](https://github.com/karel-brinda/phylign/actions/)
+[![CI Tests](https://github.com/karel-brinda/phylign/actions/workflows/ci.yaml/badge.svg)](https://github.com/karel-brinda/phylign/actions/) -->
 
 <h2>Contents</h2>
 
@@ -77,14 +85,18 @@ phylogenetic compression, including easy parallelization, small memory
 requirements, small database size, better memory locality, and better branch
 prediction.
 
-
 ## 2. Requirements
 
 ### 2a) Hardware
 
 Phylign requires a standard desktop or laptop computer with an \*nix system,
 and it can also run on a cluster. The minimal hardware requirements are **12 GB
-RAM** and approximately **270 GB of disk space** (247 GB for the database and
+RAM** and 
+- **Main branch**: approximately **140 GB of disk space** (120 GB for the database and
+a margin for intermediate files).
+
+or 
+- **ATB branch**: approximately **280 GB of disk space** (264 GB for the database and
 a margin for intermediate files).
 
 
@@ -99,7 +111,6 @@ the following packages:
 * [Python](https://www.python.org/) (>=3.7)
 * [Snakemake](https://snakemake.github.io) (>=6.2.0)
 * [Mamba](https://mamba.readthedocs.io/) (>= 0.20.0) - optional, but recommended
-
 * [Rust](https://www.rust-lang.org/tools/install)
   ```
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -143,11 +154,19 @@ conda install -y -c bioconda -c conda-forge \
 
 ### 3b) Step 2: Clone the repository
 
-Clone the repository (ATB branch):
-```
+Clone the Phylign repository from GitHub and navigate into the directory:
+```bash
+# Main branch (alignments to the 661k collection)
+git clone https://github.com/Francii-B/Phylign-Fulgor
+cd Phylign-Fulgor
+
+#OR
+
+# ATB branch (alignments to the AllTheBacteria collection)
 git clone -b ATB https://github.com/Francii-B/Phylign-Fulgor
 cd Phylign-Fulgor
 ```
+
 Download all the submodules:
 ```
 git submodule update --init --recursive
@@ -162,6 +181,7 @@ Then, make sure that ```ggcat``` submodule inside modified-Fulgor uses ```time``
 mkdir ./external/modified-Fulgor/build
 ```
 Download in this directory the [modified-Fulgor binary file](https://github.com/Francii-B/modified-Fulgor/releases/tag/v2.1.0) and rename the file as ```fulgor```.
+
 
 ### 3d) Step 4: Run a simple test
 
@@ -182,8 +202,7 @@ message:
 
 ### 3e) Step 5: Download the database
 
-Download all phylogenetically compressed assemblies and meta-Fulgor *k*-mer indexes
-for the [ATB-HQ collection](https://doi.org/10.1101/2024.03.08.584059) by:
+Download all phylogenetically compressed assemblies and meta-Fulgor *k*-mer indexes by running:
 
 ```bash
 make download
@@ -192,8 +211,8 @@ make download
 The downloaded files will be located in the `asms/` and `mfur/` directories.
 
 
-*Notes:*
-* The compressed assemblies comprise <u>*all*</u> the genomes from the ATB collection. The meta-Fulgor indexes comprise only those genomes that passed quality control.
+*Note:*
+* The compressed assemblies comprise <u>*all*</u> the genomes from the reference collection. The meta-Fulgor indexes comprise only those genomes that passed quality control.
 
 
 ## 4. Usage
@@ -361,4 +380,5 @@ quite light and usually start running as soon as they are scheduled.
 ## 7. Contacts
 
 * [Karel Brinda](https://brinda.eu) \<karel.brinda@inria.fr\>
+* [Leandro Lima](https://github.com/leoisl) \<leandro@ebi.ac.uk\>
 * [Francesca Brunetti](https://francii-b.github.io/) \<francesca.brunetti@uniroma1.it\>
