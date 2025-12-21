@@ -35,6 +35,7 @@ DOWNLOAD_PARAMS=--cores $(MAX_DOWNLOAD_THREADS) -j $(MAX_DOWNLOAD_THREADS) --res
 all: ## Run everything (the default rule)
 	make download
 	make match
+	make aggregate_matches
 	make map
 
 #DIFF_CMD=diff -q <(gunzip --stdout output/reads_1___reads_2___reads_3___reads_4.sam_summary.gz | cut -f -3) <(xzcat data/reads_1___reads_2___reads_3___reads_4.sam_summary.xz | cut -f -3)
@@ -116,10 +117,13 @@ download_asms: ## Download only the assemblies
 download_mfur: ## Download only the meta-Fulgor indexes
 	snakemake download_mfur_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
 
-match: ## Match queries using Fulgor (queries -> candidates)
+match: ## Match queries using Fulgor and select the best candidates per batch (queries -> candidates per batch)
 	scripts/benchmark.py --log logs/benchmarks/match_$(DATETIME).txt "snakemake match $(SMK_PARAMS)"
 
-map: ## Map candidates to assemblies (candidates -> alignments)
+aggregate_matches: ## Select the best candidates across the entire reference collection (candidates per batch -> overall candidates)
+	scripts/benchmark.py --log logs/benchmarks/aggregated_match_$(DATETIME).txt "snakemake aggregate_matches $(SMK_PARAMS)"
+
+map: ## Map candidates to assemblies (overall candidates -> alignments)
 	scripts/benchmark.py --log logs/benchmarks/map_$(DATETIME).txt   "snakemake map $(SMK_PARAMS)"
 
 ###############

@@ -311,6 +311,14 @@ rule match:
     """Match reads to the meta-Fulgor indexes.
     """
     input:
+        all_matches=[
+            f"intermediate/03_match/{batch}____{get_filename_for_all_queries()}.gz" for batch in batches
+        ],
+
+rule aggregate_matches:
+    """Match reads to the meta-Fulgor indexes + aggregate the results
+    """
+    input:
         f"intermediate/04_filter/{get_filename_for_all_queries()}.fa",
 
 
