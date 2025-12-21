@@ -241,8 +241,8 @@ Run `make clean` to clean intermediate files from the previous runs. This includ
 ### 4d) Step 4: Run the pipeline
 
 Simply run `make`, which will execute Snakemake with the corresponding
-parameters. If you want to run the pipeline step by step, run `make match`
-followed by `make map`.
+parameters. If you want to run the pipeline step by step, run `make match`, 
+followed by `make aggregate_matches` and `make map`.
 
 ### 4e) Step 5: Analyze your results
 
@@ -281,8 +281,9 @@ Here's a list of all implemented commands (to be executed as `make {command}`):
    download           Download the assemblies and meta-Fulgor indexes
    download_asms      Download only the assemblies
    download_mfur      Download only the meta-Fulgor indexes
-   match              Match queries using Fulgor (queries -> candidates)
-   map                Map candidates to assemblies (candidates -> alignments)
+   match              Match queries using Fulgor and select the best candidates per batch (queries -> candidates per batch)
+   aggregate_matches  Select the best candidates across the entire reference collection (candidates per batch -> overall candidates)
+   map                Map candidates to assemblies (overall candidates -> alignments)
 #############         
 # Reporting #         
 #############         
@@ -316,7 +317,7 @@ Here's a list of all implemented commands (to be executed as `make {command}`):
 * `intermediate/` Intermediate files
    * `00_queries_preprocessed/` Preprocessed queries
    * `01_queries_merged/` Merged queries
-   * `03_match/` COBS matches
+   * `03_match/` Fulgor matches per batch
    * `04_filter/` Filtered candidates
    * `05_map/` Minimap2 alignments
 * `logs/` Logs and benchmarks

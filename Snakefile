@@ -279,6 +279,14 @@ rule match:
     """Match reads to the meta-Fulgor indexes.
     """
     input:
+        all_matches=[
+            f"intermediate/03_match/{batch}____{get_filename_for_all_queries()}.gz" for batch in batches
+        ],
+
+rule aggregate_matches:
+    """Match reads to the meta-Fulgor indexes + aggregate the results
+    """
+    input:
         f"intermediate/04_filter/{get_filename_for_all_queries()}.fa",
 
 
@@ -501,7 +509,7 @@ rule run_mfur:
              get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
              + 1024
         ),
-    threads: 1 #partial_cobs_threads
+    threads: partial_cobs_threads
     params:
         kmer_thres=config["mfur_kmer_thres"],
         nb_best_hits=config["nb_best_hits"],
