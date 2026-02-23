@@ -173,7 +173,7 @@ git submodule update --init --recursive
 ```
 Then, make sure that ```ggcat``` submodule inside modified-Fulgor uses ```time``` v.0.3.37:
   1. Open ```./external/modified-Fulgor/external/ggcat/libs-crates/dynamic-dispatch-rs/Cargo.toml``` and add ```time = "0.3.37"``` under the ```[dependencies]``` section. 
-  2. Run ```cargo add --package time``` inside ```./external/modified-Fulgor/external/ggcat/libs-crates/dynamic-dispatch-rs```
+  2. Run ```cargo add time``` inside ```./external/modified-Fulgor/external/ggcat/libs-crates/dynamic-dispatch-rs```
 
 ### 3c) Step 3: Download modified-Fulgor
 
