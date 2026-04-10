@@ -3,8 +3,11 @@
 
 ##################################################
 # general
-# batches to consider during search
-batches: "data/batches_full.txt"
+# target database
+database: "661k"
+
+# optional override of the default batch list for the selected database
+# batches: "data/batches_full.txt"
 ##################################################
 
 ##################################################

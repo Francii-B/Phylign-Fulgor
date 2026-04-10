@@ -17,6 +17,23 @@ MAX_DOWNLOAD_THREADS=$(shell grep "^max_download_threads" config.yaml | awk '{pr
 DOWNLOAD_RETRIES=$(shell grep "^download_retries" config.yaml | awk '{print $$2}')
 MAX_IO_HEAVY_THREADS=$(shell grep "^max_io_heavy_threads" config.yaml | awk '{print $$2}')
 MAX_RAM_MB=$(shell grep "^max_ram_gb:" config.yaml | awk '{print $$2*1024}')
+DATABASE ?= $(shell grep "^database:" config.yaml | awk '{print $$2}' | tr -d '"')
+
+ifeq ($(strip $(DATABASE)),)
+DATABASE := 661k
+endif
+
+ifeq ($(DATABASE),ATB)
+TEST_BATCHES=data/atb_batches_small.txt
+TEST_EXPECTED=data/reads_1___reads_2___reads_3___reads_4-ATB.sam_summary.xz
+else ifeq ($(DATABASE),661k)
+TEST_BATCHES=data/batches_small.txt
+TEST_EXPECTED=data/reads_1___reads_2___reads_3___reads_4.sam_summary.xz
+else
+$(error Unsupported DATABASE '$(DATABASE)'; expected 661k or ATB)
+endif
+
+SMK_DB_CFG=--config database=$(DATABASE)
 
 ifeq ($(SMK_CLUSTER_ARGS),)
     # configure local run
@@ -33,17 +50,17 @@ DOWNLOAD_PARAMS=--cores $(MAX_DOWNLOAD_THREADS) -j $(MAX_DOWNLOAD_THREADS) --res
 ## General commands ##
 ######################
 all: ## Run everything (the default rule)
-	make download
-	make match
-	make aggregate_matches
-	make map
+	$(MAKE) download DATABASE=$(DATABASE)
+	$(MAKE) match DATABASE=$(DATABASE)
+	$(MAKE) aggregate_matches DATABASE=$(DATABASE)
+	$(MAKE) map DATABASE=$(DATABASE)
 
-DIFF_CMD=diff -q <(gunzip --stdout output/reads_1___reads_2___reads_3___reads_4.sam_summary.gz | cut -f -3) <(xzcat data/reads_1___reads_2___reads_3___reads_4.sam_summary.xz | cut -f -3)
+DIFF_CMD=diff -q <(gunzip --stdout output/reads_1___reads_2___reads_3___reads_4.sam_summary.gz | cut -f -3) <(xzcat $(TEST_EXPECTED) | cut -f -3)
 
 test: ## Quick test using 3 batches
-	snakemake download $(SMK_PARAMS) $(DOWNLOAD_PARAMS) --config batches=data/batches_small.txt  # download is not benchmarked
-	scripts/benchmark.py --log logs/benchmarks/test_match_$(DATETIME).txt "snakemake match $(SMK_PARAMS) --config batches=data/batches_small.txt nb_best_hits=1"
-	scripts/benchmark.py --log logs/benchmarks/test_map_$(DATETIME).txt   "snakemake map $(SMK_PARAMS) --config batches=data/batches_small.txt nb_best_hits=1"
+	snakemake download $(SMK_PARAMS) $(DOWNLOAD_PARAMS) $(SMK_DB_CFG) --config batches=$(TEST_BATCHES)  # download is not benchmarked
+	scripts/benchmark.py --log logs/benchmarks/test_match_$(DATETIME).txt "snakemake match $(SMK_PARAMS) $(SMK_DB_CFG) --config batches=$(TEST_BATCHES) nb_best_hits=1"
+	scripts/benchmark.py --log logs/benchmarks/test_map_$(DATETIME).txt   "snakemake map $(SMK_PARAMS) $(SMK_DB_CFG) --config batches=$(TEST_BATCHES) nb_best_hits=1"
 	@if $(DIFF_CMD); then \
 	    echo "Success! Test run produced the expected output."; \
 	else \
@@ -88,25 +105,25 @@ conda: ## Create the conda environments
 	snakemake $(SMK_PARAMS) --conda-create-envs-only
 
 download: ## Download the assemblies and meta-Fulgor indexes
-	snakemake download $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
+	snakemake download $(SMK_PARAMS) $(DOWNLOAD_PARAMS) $(SMK_DB_CFG)
 
 download_asms: ## Download only the assemblies
-	snakemake download_asms_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
+	snakemake download_asms_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS) $(SMK_DB_CFG)
 
 # download_cobs: ## Download only the COBS indexes
 # 	snakemake download_cobs_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
 
 download_mfur: ## Download only the meta-Fulgor indexes
-	snakemake download_mfur_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
+	snakemake download_mfur_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS) $(SMK_DB_CFG)
 
 match: ## Match queries using Fulgor and select the best candidates per batch (queries -> candidates per batch)
-	scripts/benchmark.py --log logs/benchmarks/match_$(DATETIME).txt "snakemake match $(SMK_PARAMS)"
+	scripts/benchmark.py --log logs/benchmarks/match_$(DATETIME).txt "snakemake match $(SMK_PARAMS) $(SMK_DB_CFG)"
 
 aggregate_matches: ## Select the best candidates across the entire reference collection (candidates per batch -> overall candidates)
-	scripts/benchmark.py --log logs/benchmarks/aggregated_match_$(DATETIME).txt "snakemake aggregate_matches $(SMK_PARAMS)"
+	scripts/benchmark.py --log logs/benchmarks/aggregated_match_$(DATETIME).txt "snakemake aggregate_matches $(SMK_PARAMS) $(SMK_DB_CFG)"
 
 map: ## Map candidates to assemblies (overall candidates -> alignments)
-	scripts/benchmark.py --log logs/benchmarks/map_$(DATETIME).txt   "snakemake map $(SMK_PARAMS)"
+	scripts/benchmark.py --log logs/benchmarks/map_$(DATETIME).txt   "snakemake map $(SMK_PARAMS) $(SMK_DB_CFG)"
 
 ###############
 ## Reporting ##

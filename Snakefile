@@ -31,7 +31,7 @@ def get_all_query_filenames():
 
 
 def get_batches():
-    with open(config["batches"]) as fin:
+    with open(BATCHES_FILE) as fin:
         return list(sorted(filter(len, map(str.strip, fin))))
 
 
@@ -131,6 +131,11 @@ def get_index_load_mode():
     return index_load_mode
 
 
+def get_atb_asms_urls():
+    with open("data/atb_asms_download_link.tsv") as fin:
+        return dict(line.strip().split("\t", 1) for line in fin)
+
+
 ##################################
 ## Initialization
 ##################################
@@ -141,6 +146,27 @@ configfile: "config.yaml"
 
 min_version("6.2.0")
 shell.prefix("set -euo pipefail")
+
+DB_CONF = {
+    "661k": {
+        "default_batches": "data/batches_full.txt",
+        "batch_regex": r".+__\d\d",
+        "decompressed_indexes_sizes": "data/decompressed_indexes_sizes.txt",
+        "accessions": "data/661k_batches.txt.xz",
+    },
+    "ATB": {
+        "default_batches": "data/atb_batches_full.txt",
+        "batch_regex": r".+\.batch\.\d{1,3}",
+        "asm_url_tsv": "data/atb_asms_download_link.tsv",
+        "decompressed_indexes_sizes": "data/decompressed_indexes_sizes_fulgor_ATB.txt",
+        "accessions": "data/ATB_batches.txt.xz",
+    },
+}
+
+DB = config.get("database", "661k")
+assert DB in DB_CONF, f"database must be one of {sorted(DB_CONF)}"
+BATCHES_FILE = config.get("batches", DB_CONF[DB]["default_batches"])
+ATB_ASMS_URLS = get_atb_asms_urls() if DB == "ATB" else {}
 
 batches = get_batches()
 print(f"Batches: {batches}")
@@ -182,7 +208,7 @@ elif index_load_mode == "mmap-disk":
 
 
 wildcard_constraints:
-    batch=".+__\d\d",
+    batch=DB_CONF[DB]["batch_regex"],
 
 
 # if keep_cobs_indexes:
@@ -207,22 +233,59 @@ wildcard_constraints:
 #         return f"https://zenodo.org/record/6845083/files/{x}.cobs_classic.xz"
 
 
-def mfur_url_fct(wildcards): #url to the HQ indexes
-    x = wildcards.batch
-    if x <= "dustbin__15":
-        return f"https://zenodo.org/record/14002973/files/{x}.mfur" #part1
-    elif x <= "mycobacterium_kansasii__01" :
-        return f"https://zenodo.org/record/14002975/files/{x}.mfur" #part2
-    elif x <= "salmonella_enterica__33" :
-        return f"https://zenodo.org/record/14006705/files/{x}.mfur" #part3
-    else :
-        return f"https://zenodo.org/record/14006707/files/{x}.mfur" #part4
+def mfur_url_661k(batch):
+    if batch <= "dustbin__15":
+        return f"https://zenodo.org/record/14002973/files/{batch}.mfur"
+    elif batch <= "mycobacterium_kansasii__01":
+        return f"https://zenodo.org/record/14002975/files/{batch}.mfur"
+    elif batch <= "salmonella_enterica__33":
+        return f"https://zenodo.org/record/14006705/files/{batch}.mfur"
+    else:
+        return f"https://zenodo.org/record/14006707/files/{batch}.mfur"
+
+
+def mfur_url_atb(batch):
+    batch_id = int(batch.split(".")[-1])
+    if batch_id <= 100:
+        return f"https://zenodo.org/record/15994164/files/{batch}.mfur"
+    elif batch_id <= 134:
+        return f"https://zenodo.org/record/15994228/files/{batch}.mfur"
+    elif batch_id <= 225:
+        return f"https://zenodo.org/record/15994270/files/{batch}.mfur"
+    elif batch_id <= 325:
+        return f"https://zenodo.org/record/15994318/files/{batch}.mfur"
+    elif batch_id <= 425:
+        return f"https://zenodo.org/record/15994445/files/{batch}.mfur"
+    elif batch_id <= 525:
+        return f"https://zenodo.org/record/15994505/files/{batch}.mfur"
+    elif batch_id <= 625:
+        return f"https://zenodo.org/record/15994553/files/{batch}.mfur"
+    else:
+        return f"https://zenodo.org/record/15994624/files/{batch}.mfur"
+
+
+def mfur_url_fct(wildcards):
+    if DB == "661k":
+        return mfur_url_661k(wildcards.batch)
+    return mfur_url_atb(wildcards.batch)
+
+
+def asms_url_661k(batch):
+    asm_zenodo = 4602622
+    asm_url = f"https://zenodo.org/record/{asm_zenodo}/files/{batch}.tar.xz"
+    return asm_url
+
+
+def asms_url_atb(batch):
+    key = f"{batch}.tar.xz"
+    assert key in ATB_ASMS_URLS, f"Missing ATB assembly URL for batch {batch}"
+    return ATB_ASMS_URLS[key]
 
 
 def asms_url_fct(wildcards):
-    asm_zenodo = 4602622
-    asm_url = f"https://zenodo.org/record/{asm_zenodo}/files/{wildcards.batch}.tar.xz"
-    return asm_url
+    if DB == "661k":
+        return asms_url_661k(wildcards.batch)
+    return asms_url_atb(wildcards.batch)
 
 
 def get_sleep_amount(attempt):
@@ -499,7 +562,7 @@ rule run_mfur:
     input:
         mfur_index=f"{mfur_dir}/{{batch}}.mfur",
         fa="intermediate/01_queries_merged/{qfile}.fa",
-        decompressed_indexes_sizes="data/decompressed_indexes_sizes.txt",
+        decompressed_indexes_sizes=DB_CONF[DB]["decompressed_indexes_sizes"],
     resources:
         max_io_heavy_threads=int(cobs_is_an_IO_heavy_job),
         max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
@@ -637,6 +700,7 @@ rule batch_align_minimap2:
         minimap_extra_params=config["minimap_extra_params"],
         pipe="--pipe" if config["prefer_pipe"] else "",
         refs_tmp="intermediate/05_map/{batch}____{qfile}.refs.tmp",
+        accessions=DB_CONF[DB]["accessions"],
     conda:
         "envs/minimap2.yaml"
     threads: config["minimap_threads"]
@@ -644,7 +708,7 @@ rule batch_align_minimap2:
         mem_mb=lambda wildcards, attempt: 1000 * 2 ** (attempt),  # 1GB, 2GB, 4GB, 8GB...
     shell:
         """
-        xzcat data/661k_batches.txt.xz \\
+        xzcat {params.accessions} \\
             | grep {wildcards.batch} \\
             | cut -f2 \\
             > {params.refs_tmp}

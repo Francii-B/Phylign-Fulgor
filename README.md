@@ -21,12 +21,10 @@ to align batches of queries to them by
 all within only several hours.
 </p><br/>
 
-**Available Branches and Supplementary Material:**
-- <a href="https://github.com/Francii-B/Phylign-Fulgor/">**Main branch** </a> : Perform alignment to the
-<a href="https://doi.org/10.1371/journal.pbio.3001421"> 661k </a> collection.
-- <a href="https://github.com/Francii-B/Phylign-Fulgor/tree/ATB">**ATB branch** </a> : Perform alignment to the
-<a href="https://doi.org/10.1101/2024.03.08.584059"> ATB </a> collection.
- - <a href="https://github.com/Francii-B/optimized-kmer-search-supplement-material"> **Supplementary repository** </a>: Contains the supplementary material for the paper <i>"Optimized k-mer search across millions of bacterial genomes on laptops"</i>.
+**Repository status and supplementary material:**
+- This branch supports both the <a href="https://doi.org/10.1371/journal.pbio.3001421">661k</a> and <a href="https://doi.org/10.1101/2024.03.08.584059">ATB</a> collections from one codebase.
+- Select the target database with `database: "661k"` or `database: "ATB"` in `config.yaml`, or override it with `make ... DATABASE=ATB`.
+- <a href="https://github.com/Francii-B/optimized-kmer-search-supplement-material">Supplementary repository</a>: contains the supplementary material for the paper <i>"Optimized k-mer search across millions of bacterial genomes on laptops"</i>.
 
 [![Info](https://img.shields.io/badge/Project-Info-blue)](https://brinda.eu/mof)
 <!-- [![Paper DOI](https://img.shields.io/badge/paper-10.1101/2023.04.15.536996-14dc3d.svg)](https://doi.org/10.1101/2023.04.15.536996)
@@ -91,13 +89,13 @@ prediction.
 
 Phylign requires a standard desktop or laptop computer with an \*nix system,
 and it can also run on a cluster. The minimal hardware requirements are **12 GB
-RAM** and 
-- **Main branch**: approximately **140 GB of disk space** (120 GB for the database and
-a margin for intermediate files).
+RAM** and
+- **661k**: approximately **140 GB of disk space** (120 GB for the database and
+  a margin for intermediate files).
 
 or 
-- **ATB branch**: approximately **280 GB of disk space** (264 GB for the database and
-a margin for intermediate files).
+- **ATB**: approximately **280 GB of disk space** (264 GB for the database and
+  a margin for intermediate files).
 
 
 ### 2b) Dependencies
@@ -156,14 +154,7 @@ conda install -y -c bioconda -c conda-forge \
 
 Clone the Phylign repository from GitHub and navigate into the directory:
 ```bash
-# Main branch (alignments to the 661k collection)
 git clone https://github.com/Francii-B/Phylign-Fulgor
-cd Phylign-Fulgor
-
-#OR
-
-# ATB branch (alignments to the AllTheBacteria collection)
-git clone -b ATB https://github.com/Francii-B/Phylign-Fulgor
 cd Phylign-Fulgor
 ```
 
@@ -190,6 +181,9 @@ Run the following command to ensure the pipeline works for sample queries and
 
 ```bash
 make test
+
+# or test the ATB configuration
+make test DATABASE=ATB
 ```
 
 Make sure the test returns 0 (success) and that you see the expected output
@@ -206,6 +200,9 @@ Download all phylogenetically compressed assemblies and meta-Fulgor *k*-mer inde
 
 ```bash
 make download
+
+# or download the ATB database
+make download DATABASE=ATB
 ```
 
 The downloaded files will be located in the `asms/` and `mfur/` directories.
@@ -231,8 +228,22 @@ merged together.
 
 ### 4b) Step 2: Adjust configuration
 
-Edit the [`config.yaml`](config.yaml) file for your desired search. All
-available options are documented directly there.
+Edit the [`config.yaml`](config.yaml) file for your desired search. Select the
+target database with:
+
+```yaml
+database: "661k"
+```
+
+or
+
+```yaml
+database: "ATB"
+```
+
+You can also override the selection per command, for example
+`make test DATABASE=ATB` or `make download DATABASE=ATB`. All available options
+are documented directly in `config.yaml`.
 
 ### 4c) Step 3: Clean up intermediate files
 
