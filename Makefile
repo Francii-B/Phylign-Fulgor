@@ -5,45 +5,49 @@
 	cluster_slurm cluster_lsf cluster_lsf_test \
 	format checkformat dryrun lint
 
-SHELL=/usr/bin/env bash -eo pipefail
-DATETIME=$(shell date -u +"%Y_%m_%dT%H_%M_%S")
+SHELL := /usr/bin/env bash
+.SHELLFLAGS := -eo pipefail -c
+.DEFAULT_GOAL := all
+DATETIME := $(shell date -u +"%Y_%m_%dT%H_%M_%S")
 
 .SECONDARY:
 
 .SUFFIXES:
 
-THREADS=$(shell grep "^threads:" config.yaml | awk '{print $$2}')
-MAX_DOWNLOAD_THREADS=$(shell grep "^max_download_threads" config.yaml | awk '{print $$2}')
-DOWNLOAD_RETRIES=$(shell grep "^download_retries" config.yaml | awk '{print $$2}')
-MAX_IO_HEAVY_THREADS=$(shell grep "^max_io_heavy_threads" config.yaml | awk '{print $$2}')
-MAX_RAM_MB=$(shell grep "^max_ram_gb:" config.yaml | awk '{print $$2*1024}')
-DATABASE ?= $(shell grep "^database:" config.yaml | awk '{print $$2}' | tr -d '"')
+THREADS := $(shell grep "^threads:" config.yaml | awk '{print $$2}')
+MAX_DOWNLOAD_THREADS := $(shell grep "^max_download_threads" config.yaml | awk '{print $$2}')
+DOWNLOAD_RETRIES := $(shell grep "^download_retries" config.yaml | awk '{print $$2}')
+MAX_IO_HEAVY_THREADS := $(shell grep "^max_io_heavy_threads" config.yaml | awk '{print $$2}')
+MAX_RAM_MB := $(shell grep "^max_ram_gb:" config.yaml | awk '{print $$2*1024}')
+ifndef DATABASE
+DATABASE := $(shell grep "^database:" config.yaml | awk '{print $$2}' | tr -d '"')
+endif
 
 ifeq ($(strip $(DATABASE)),)
 DATABASE := 661k
 endif
 
 ifeq ($(DATABASE),ATB)
-TEST_BATCHES=data/atb_batches_small.txt
-TEST_EXPECTED=data/reads_1___reads_2___reads_3___reads_4-ATB.sam_summary.xz
+TEST_BATCHES := data/atb_batches_small.txt
+TEST_EXPECTED := data/reads_1___reads_2___reads_3___reads_4-ATB.sam_summary.xz
 else ifeq ($(DATABASE),661k)
-TEST_BATCHES=data/batches_small.txt
-TEST_EXPECTED=data/reads_1___reads_2___reads_3___reads_4.sam_summary.xz
+TEST_BATCHES := data/batches_small.txt
+TEST_EXPECTED := data/reads_1___reads_2___reads_3___reads_4.sam_summary.xz
 else
 $(error Unsupported DATABASE '$(DATABASE)'; expected 661k or ATB)
 endif
 
-SMK_DB_CFG=--config database=$(DATABASE)
+SMK_DB_CFG := --config database=$(DATABASE)
 
 ifeq ($(SMK_CLUSTER_ARGS),)
     # configure local run
-    SMK_PARAMS=--cores ${THREADS} --rerun-incomplete --printshellcmds --keep-going --use-conda --resources max_download_threads=$(MAX_DOWNLOAD_THREADS) max_io_heavy_threads=$(MAX_IO_HEAVY_THREADS) max_ram_mb=$(MAX_RAM_MB)
+    SMK_PARAMS := --cores ${THREADS} --rerun-incomplete --printshellcmds --keep-going --use-conda --resources max_download_threads=$(MAX_DOWNLOAD_THREADS) max_io_heavy_threads=$(MAX_IO_HEAVY_THREADS) max_ram_mb=$(MAX_RAM_MB)
 else
     # configure cluster run
-    SMK_PARAMS=--cores all --rerun-incomplete --printshellcmds --keep-going --use-conda --resources max_download_threads=10000000 max_io_heavy_threads=10000000 max_ram_mb=1000000000 $(SMK_CLUSTER_ARGS)
+    SMK_PARAMS := --cores all --rerun-incomplete --printshellcmds --keep-going --use-conda --resources max_download_threads=10000000 max_io_heavy_threads=10000000 max_ram_mb=1000000000 $(SMK_CLUSTER_ARGS)
 endif
 
-DOWNLOAD_PARAMS=--cores $(MAX_DOWNLOAD_THREADS) -j $(MAX_DOWNLOAD_THREADS) --restart-times $(DOWNLOAD_RETRIES)
+DOWNLOAD_PARAMS := --cores $(MAX_DOWNLOAD_THREADS) -j $(MAX_DOWNLOAD_THREADS) --restart-times $(DOWNLOAD_RETRIES)
 
 
 ######################
