@@ -164,15 +164,15 @@ cluster_slurm: ## Submit to a SLURM cluster
         -c 10 \
         --mem=80GB \
         -t 0-08:00:00 \
-        --wrap="make"
+        --wrap="make DATABASE=$(DATABASE)"
 
 cluster_lsf: ## Submit to LSF cluster
 	scripts/check_if_config_is_ok_for_cluster_run.py
-	scripts/submit_lsf.sh
+	scripts/submit_lsf.sh DATABASE=$(DATABASE)
 
 cluster_lsf_test: ## Submit the test pipeline to LSF cluster
 	scripts/check_if_config_is_ok_for_cluster_run.py
-	scripts/submit_lsf.sh test
+	scripts/submit_lsf.sh test DATABASE=$(DATABASE)
 
 
 ####################
