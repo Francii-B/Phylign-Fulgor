@@ -460,8 +460,6 @@ rule run_fulgor:
         fulgor_threshold=config["fulgor_threshold"],
         nb_best_hits=config["nb_best_hits"],
     priority: 999
-    # conda:
-    #     "envs/cobs.yaml"
     # modified-Fulgor emits COBS-like text output for downstream parsing compatibility.
     shell:
         """
