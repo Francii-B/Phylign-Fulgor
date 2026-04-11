@@ -49,6 +49,8 @@ endif
 
 DOWNLOAD_PARAMS := --cores $(MAX_DOWNLOAD_THREADS) -j $(MAX_DOWNLOAD_THREADS) --restart-times $(DOWNLOAD_RETRIES)
 BENCHMARK_DIR := logs/benchmarks
+REPORT_DIR := logs/reports
+REPORT_FILE := $(REPORT_DIR)/report_$(DATABASE)_$(DATETIME).html
 
 
 ######################
@@ -148,7 +150,8 @@ config: ## Print configuration without comments
 	@#| grep -Ev ^$$
 
 report: ## Generate Snakemake report
-	snakemake $(SMK_DB_CFG) --report
+	mkdir -p $(REPORT_DIR)
+	snakemake $(SMK_DB_CFG) --report $(REPORT_FILE)
 
 
 
