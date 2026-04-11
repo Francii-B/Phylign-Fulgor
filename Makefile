@@ -1,9 +1,9 @@
 .PHONY: \
 	all test help clean cleanall fulgor_config\
-	conda download download_asms download_mfur match map \
+	conda download download_asms download_mfur match aggregate_matches map \
 	config report \
 	cluster_slurm cluster_lsf cluster_lsf_test \
-	format checkformat
+	format checkformat dryrun lint
 
 SHELL=/usr/bin/env bash -eo pipefail
 DATETIME=$(shell date -u +"%Y_%m_%dT%H_%M_%S")
@@ -81,6 +81,9 @@ help: ## Print help messages
 			-e 's/: /:/g' \
 			-e 's/^#\(.*\)#/\\x1b[90m\1\\x1b[m/' \
 		| column -c2 -t -s : )"
+
+dryrun: ## Show the planned Snakemake workflow without executing jobs
+	snakemake --dry-run $(SMK_PARAMS) $(SMK_DB_CFG)
 
 clean: ## Clean intermediate search files
 	rm -fv intermediate/*/*
@@ -171,3 +174,6 @@ format: ## Reformat Python and Snakemake files
 checkformat: ## Check source code format
 	snakefmt --check Snakefile
 	yapf --diff */*.py
+
+lint: ## Lint the Snakemake workflow
+	snakemake --lint $(SMK_PARAMS) $(SMK_DB_CFG)
