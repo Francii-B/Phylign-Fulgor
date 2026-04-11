@@ -111,7 +111,7 @@ fulgor_config: ##Install Fulgor dependencies and compile
 ####################
 
 conda: ## Create the conda environments
-	snakemake $(SMK_PARAMS) --conda-create-envs-only
+	snakemake $(SMK_PARAMS) $(SMK_DB_CFG) --conda-create-envs-only
 
 download: ## Download the assemblies and meta-Fulgor indexes
 	snakemake download $(SMK_PARAMS) $(DOWNLOAD_PARAMS) $(SMK_DB_CFG)
@@ -148,7 +148,7 @@ config: ## Print configuration without comments
 	@#| grep -Ev ^$$
 
 report: ## Generate Snakemake report
-	snakemake --report
+	snakemake $(SMK_DB_CFG) --report
 
 
 
