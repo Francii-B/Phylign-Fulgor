@@ -121,9 +121,6 @@ download: ## Download the assemblies and meta-Fulgor indexes
 download_asms: ## Download only the assemblies
 	snakemake download_asms_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS) $(SMK_DB_CFG)
 
-# download_cobs: ## Download only the COBS indexes
-# 	snakemake download_cobs_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS)
-
 download_mfur: ## Download only the meta-Fulgor indexes
 	snakemake download_mfur_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS) $(SMK_DB_CFG)
 

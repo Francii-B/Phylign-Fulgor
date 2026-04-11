@@ -205,7 +205,8 @@ make download
 make download DATABASE=ATB
 ```
 
-The downloaded files will be located in the `asms/` and `mfur/` directories.
+The downloaded files will be located in the `asms/` directory for compressed
+assemblies and the `mfur/` directory for meta-Fulgor indexes.
 
 
 *Note:*
@@ -322,7 +323,7 @@ Here's a list of all implemented commands (to be executed as `make {command}`):
 
 ### 5b) Directories
 
-* `asms/`, `mfur/` Downloaded assemblies and COBS indexes
+* `asms/`, `mfur/` Downloaded compressed assemblies and meta-Fulgor indexes
 * `input/` Queries, to be provided within one or more FASTA/FASTQ files,
   possibly gzipped (`.fa`)
 * `intermediate/` Intermediate files
