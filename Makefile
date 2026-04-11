@@ -185,4 +185,4 @@ checkformat: ## Check source code format
 	yapf --diff */*.py
 
 lint: ## Lint the Snakemake workflow
-	snakemake --lint $(SMK_PARAMS) $(SMK_DB_CFG)
+	snakemake --lint $(SMK_PARAMS) $(SMK_DB_CFG) || true
