@@ -44,11 +44,11 @@ def get_index_metadata(wildcards, input):
     decompressed_indexes_sizes_filepath = input.decompressed_indexes_sizes
     with open(decompressed_indexes_sizes_filepath) as decompressed_indexes_sizes_fh:
         for line in decompressed_indexes_sizes_fh:
-            cobs_index, size_in_bytes, xz_decompress_RAM = line.strip().split()
-            batch_for_cobs_index = cobs_index.split("/")[-1].replace(".mfur", "")
+            index_path, size_in_bytes, xz_decompress_RAM = line.strip().split()
+            batch_for_index = index_path.split("/")[-1].replace(".mfur", "")
             size_in_bytes = int(size_in_bytes)
             xz_decompress_RAM = int(xz_decompress_RAM)
-            if batch == batch_for_cobs_index:
+            if batch == batch_for_index:
                 return size_in_bytes, xz_decompress_RAM
 
     assert (
@@ -72,7 +72,7 @@ def get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming):
     # if ignore_RAM:
     #    return 0
     # if streaming:
-    #    # then we are decompressing and running cobs at the same time
+    #    # then we are decompressing and matching at the same time
     #    xz_decompression_RAM_usage_in_MB = get_xz_decompress_RAM_in_MB(wildcards, input)
     # else:
     # xz_decompression_RAM_usage_in_MB = 0
@@ -81,25 +81,25 @@ def get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming):
     return size_in_MB  # + xz_decompression_RAM_usage_in_MB
 
 
-def get_max_number_of_COBS_threads_from_auto_string(auto_string):
-    cobs_threads = re.findall(r"auto\((\d+)\)", auto_string)
-    parsing_was_successful = len(cobs_threads) == 1
-    assert parsing_was_successful, "Error parsing parameter cobs_threads parameter"
-    cobs_threads = int(cobs_threads[0])
-    return cobs_threads
+def get_max_number_of_fulgor_threads_from_auto_string(auto_string):
+    fulgor_threads = re.findall(r"auto\((\d+)\)", auto_string)
+    parsing_was_successful = len(fulgor_threads) == 1
+    assert parsing_was_successful, "Error parsing parameter fulgor_threads"
+    fulgor_threads = int(fulgor_threads[0])
+    return fulgor_threads
 
 
-def get_number_of_COBS_threads(wildcards, input, predefined_cobs_threads, streaming):
-    user_defined_nb_of_threads = not predefined_cobs_threads.startswith("auto")
+def get_number_of_fulgor_threads(wildcards, input, predefined_fulgor_threads, streaming):
+    user_defined_nb_of_threads = not predefined_fulgor_threads.startswith("auto")
     if user_defined_nb_of_threads:
-        return int(predefined_cobs_threads)
+        return int(predefined_fulgor_threads)
 
-    use_max_cores = predefined_cobs_threads == "auto"
+    use_max_cores = predefined_fulgor_threads == "auto"
     if use_max_cores:
-        max_number_of_COBS_threads = workflow.cores
+        max_number_of_fulgor_threads = workflow.cores
     else:
-        max_number_of_COBS_threads = get_max_number_of_COBS_threads_from_auto_string(
-            predefined_cobs_threads
+        max_number_of_fulgor_threads = get_max_number_of_fulgor_threads_from_auto_string(
+            predefined_fulgor_threads
         )
 
     uncompressed_batch_size_in_MB = get_uncompressed_batch_size_in_MB(
@@ -107,16 +107,16 @@ def get_number_of_COBS_threads(wildcards, input, predefined_cobs_threads, stream
     )
     max_RAM_MB = int(config["max_ram_gb"]) * 1024
     number_of_cores_to_use = round(
-        uncompressed_batch_size_in_MB / max_RAM_MB * max_number_of_COBS_threads
+        uncompressed_batch_size_in_MB / max_RAM_MB * max_number_of_fulgor_threads
     )
     number_of_cores_to_use = max(number_of_cores_to_use, 1)
-    number_of_cores_to_use = min(number_of_cores_to_use, max_number_of_COBS_threads)
+    number_of_cores_to_use = min(number_of_cores_to_use, max_number_of_fulgor_threads)
     is_using_more_than_half_of_the_cores = (
-        number_of_cores_to_use > max_number_of_COBS_threads / 2
+        number_of_cores_to_use > max_number_of_fulgor_threads / 2
     )
     if is_using_more_than_half_of_the_cores:
-        # usually in this situation we run just one COBS jobs simultaneously. Better then to use all cores then
-        number_of_cores_to_use = max_number_of_COBS_threads
+        # Usually in this situation we run just one Fulgor job simultaneously.
+        number_of_cores_to_use = max_number_of_fulgor_threads
     return number_of_cores_to_use
 
 
@@ -232,38 +232,24 @@ qfiles = get_all_query_filepaths()
 print(f"Query files: {list(map(str, qfiles))}")
 
 assemblies_dir = Path(f"{config['download_dir']}/asms")
-# cobs_dir = Path(f"{config['download_dir']}/cobs")
 mfur_dir = Path(f"{config['download_dir']}/mfur")
-decompression_dir = Path(
-    config.get("decompression_dir", "intermediate/02_cobs_decompressed")
+
+predefined_fulgor_threads = str(
+    config["fulgor_threads"]
 )
 
-keep_cobs_indexes = config[
-    "keep_cobs_indexes"
-]  # mfur indexes are already uncompression
-predefined_cobs_threads = str(config["cobs_threads"])
-# predefined_mfur_threads = str(config["mfur_threads"])
-
-# strictly related to COBS?
 ignore_RAM = False
-load_complete = False
 streaming = False
-cobs_is_an_IO_heavy_job = False
+fulgor_is_an_io_heavy_job = False
 index_load_mode = get_index_load_mode()
 
 if index_load_mode == "mem-stream":
-    # this parameter is ignored because we never decompress indexes to disk with this load mode
-    keep_cobs_indexes = False
-    load_complete = True
     streaming = True
-elif index_load_mode == "mem-disk":
-    load_complete = True
 elif index_load_mode == "mmap-disk":
     # we ignore RAM usage because the OS is responsible for controlling RAM usage in this case
     ignore_RAM = True
-    # we set cobs as an IO-heavy job because during its execution it might access the disk several times
-    # due to mmap
-    cobs_is_an_IO_heavy_job = True
+    # Fulgor becomes IO-heavy in mmap mode because the index is accessed on demand.
+    fulgor_is_an_io_heavy_job = True
 
 
 wildcard_constraints:
@@ -397,7 +383,7 @@ def get_query_file(wildcards):
 
 
 rule fix_query:
-    """Fix query to expected COBS format: single line fastas composed of ACGT bases only
+    """Normalize query to the matching input format: single-line FASTA with ACGT bases only.
     """
     output:
         fixed_query="intermediate/00_queries_preprocessed/{qfile}.fa",
@@ -419,7 +405,7 @@ rule fix_query:
 
 
 rule concatenate_queries:
-    """Concatenate all queries into a single file, so we just need to run COBS/minimap2 just once per batch
+    """Concatenate queries so we run matching and alignment only once per batch.
     """
     output:
         concatenated_query=f"intermediate/01_queries_merged/{get_filename_for_all_queries()}.fa",
@@ -439,9 +425,9 @@ rule concatenate_queries:
 
 # note: snakefmt makes incorrect breaks and spacing for threads; to keep the lines
 #       short to prevent this behaviour, we use the following function
-partial_cobs_threads = functools.partial(
-    get_number_of_COBS_threads,
-    predefined_cobs_threads=predefined_cobs_threads,
+partial_fulgor_threads = functools.partial(
+    get_number_of_fulgor_threads,
+    predefined_fulgor_threads=predefined_fulgor_threads,
     streaming=streaming,
 )
 
@@ -450,18 +436,18 @@ partial_cobs_threads = functools.partial(
 # the workflow switched to meta-Fulgor execution.
 
 
-rule run_mfur:
-    """meta-Fulgor query
+rule run_fulgor:
+    """Run Fulgor for the matching stage against meta-Fulgor indexes.
     """
     output:
-        mfur_output=temp("intermediate/03_match/{batch}____{qfile}-preprocessed.tsv"),
+        raw_fulgor_output=temp("intermediate/03_match/{batch}____{qfile}-preprocessed.tsv"),
         match="intermediate/03_match/{batch}____{qfile}.gz",
     input:
         mfur_index=f"{mfur_dir}/{{batch}}.mfur",
         fa="intermediate/01_queries_merged/{qfile}.fa",
         decompressed_indexes_sizes=DB_CONF[DB]["decompressed_indexes_sizes"],
     resources:
-        max_io_heavy_threads=int(cobs_is_an_IO_heavy_job),
+        max_io_heavy_threads=int(fulgor_is_an_io_heavy_job),
         max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
             wildcards, input, ignore_RAM, streaming
         ),
@@ -469,23 +455,24 @@ rule run_mfur:
             get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
             + 1024
         ),
-    threads: partial_cobs_threads
+    threads: partial_fulgor_threads
     params:
-        kmer_thres=config["mfur_kmer_thres"],
+        fulgor_threshold=config["fulgor_threshold"],
         nb_best_hits=config["nb_best_hits"],
     priority: 999
     # conda:
     #     "envs/cobs.yaml"
+    # modified-Fulgor emits COBS-like text output for downstream parsing compatibility.
     shell:
         """
-        ./scripts/benchmark.py --log logs/benchmarks/run_mfur/{wildcards.batch}____{wildcards.qfile}.txt \\
+        ./scripts/benchmark.py --log logs/benchmarks/run_fulgor/{wildcards.batch}____{wildcards.qfile}.txt \\
             './external/modified-Fulgor/build/fulgor pseudoalign \\
-                    --threshold {params.kmer_thres} \\
+                    --threshold {params.fulgor_threshold} \\
                     -t {threads} \\
                     -i {input.mfur_index} \\
                     -q {input.fa} --cobs \\
-                    -o {output.mfur_output}; \\
-                cat {output.mfur_output} | ./scripts/postprocess_cobs.py -n {params.nb_best_hits} \\
+                    -o {output.raw_fulgor_output}; \\
+                cat {output.raw_fulgor_output} | ./scripts/postprocess_cobs.py -n {params.nb_best_hits} \\
                 | gzip --fast \\
                 > {output.match}'
         """
