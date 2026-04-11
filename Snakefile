@@ -460,7 +460,7 @@ rule run_fulgor:
         fulgor_threshold=config["fulgor_threshold"],
         nb_best_hits=config["nb_best_hits"],
     priority: 999
-    # modified-Fulgor emits COBS-like text output for downstream parsing compatibility.
+    # modified-Fulgor emits COBS-compatible text consumed by a downstream compatibility layer.
     shell:
         """
         ./scripts/benchmark.py --log logs/benchmarks/run_fulgor/{wildcards.batch}____{wildcards.qfile}.txt \\
@@ -470,7 +470,7 @@ rule run_fulgor:
                     -i {input.mfur_index} \\
                     -q {input.fa} --cobs \\
                     -o {output.raw_fulgor_output}; \\
-                cat {output.raw_fulgor_output} | ./scripts/postprocess_cobs.py -n {params.nb_best_hits} \\
+                cat {output.raw_fulgor_output} | ./scripts/postprocess_kmer_matches.py -n {params.nb_best_hits} \\
                 | gzip --fast \\
                 > {output.match}'
         """
