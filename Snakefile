@@ -45,7 +45,7 @@ def get_index_metadata(wildcards, input):
     with open(decompressed_indexes_sizes_filepath) as decompressed_indexes_sizes_fh:
         for line in decompressed_indexes_sizes_fh:
             index_path, size_in_bytes, xz_decompress_RAM = line.strip().split()
-            batch_for_index = index_path.split("/")[-1].replace(".mfur", "")
+            batch_for_index = Path(index_path).stem
             size_in_bytes = int(size_in_bytes)
             xz_decompress_RAM = int(xz_decompress_RAM)
             if batch == batch_for_index:
