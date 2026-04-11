@@ -13,11 +13,12 @@ jobs:
     name: Test
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest]
         python-version: [ 3.8, 3.9, "3.10", 3.11 ]
     steps:
-    - uses: mamba-org/setup-micromamba@v1
+    - uses: mamba-org/setup-micromamba@v2
       name: Install dependencies
       with:
         micromamba-version: '1.5.3-0'
@@ -33,7 +34,8 @@ jobs:
           mamba=1.5.3
         init-shell: >-
           bash
-        cache-environment: true
+        cache-environment: ${{ matrix.os != 'macos-latest' }}
+        cache-downloads: ${{ matrix.os != 'macos-latest' }}
         post-cleanup: 'all'
 
     # installs gnu-time on macos
@@ -42,7 +44,7 @@ jobs:
       run: brew install gnu-time
 
     - name: Check out code for the build
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
       with:
         submodules: recursive
 
