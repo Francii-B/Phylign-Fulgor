@@ -48,6 +48,7 @@ else
 endif
 
 DOWNLOAD_PARAMS := --cores $(MAX_DOWNLOAD_THREADS) -j $(MAX_DOWNLOAD_THREADS) --restart-times $(DOWNLOAD_RETRIES)
+BENCHMARK_DIR := logs/benchmarks
 
 
 ######################
@@ -63,8 +64,9 @@ DIFF_CMD=diff -q <(gunzip --stdout output/reads_1___reads_2___reads_3___reads_4.
 
 test: ## Quick test using 3 batches
 	snakemake download $(SMK_PARAMS) $(DOWNLOAD_PARAMS) $(SMK_DB_CFG) --config batches=$(TEST_BATCHES)  # download is not benchmarked
-	scripts/benchmark.py --log logs/benchmarks/test_match_$(DATETIME).txt "snakemake match $(SMK_PARAMS) $(SMK_DB_CFG) --config batches=$(TEST_BATCHES) nb_best_hits=1"
-	scripts/benchmark.py --log logs/benchmarks/test_map_$(DATETIME).txt   "snakemake map $(SMK_PARAMS) $(SMK_DB_CFG) --config batches=$(TEST_BATCHES) nb_best_hits=1"
+	mkdir -p $(BENCHMARK_DIR)
+	scripts/benchmark.py --log $(BENCHMARK_DIR)/test_match_$(DATETIME).txt "snakemake match $(SMK_PARAMS) $(SMK_DB_CFG) --config batches=$(TEST_BATCHES) nb_best_hits=1"
+	scripts/benchmark.py --log $(BENCHMARK_DIR)/test_map_$(DATETIME).txt   "snakemake map $(SMK_PARAMS) $(SMK_DB_CFG) --config batches=$(TEST_BATCHES) nb_best_hits=1"
 	@if $(DIFF_CMD); then \
 	    echo "Success! Test run produced the expected output."; \
 	else \
@@ -124,13 +126,16 @@ download_mfur: ## Download only the meta-Fulgor indexes
 	snakemake download_mfur_batches $(SMK_PARAMS) $(DOWNLOAD_PARAMS) $(SMK_DB_CFG)
 
 match: ## Match queries using Fulgor and select the best candidates per batch (queries -> candidates per batch)
-	scripts/benchmark.py --log logs/benchmarks/match_$(DATETIME).txt "snakemake match $(SMK_PARAMS) $(SMK_DB_CFG)"
+	mkdir -p $(BENCHMARK_DIR)
+	scripts/benchmark.py --log $(BENCHMARK_DIR)/match_$(DATETIME).txt "snakemake match $(SMK_PARAMS) $(SMK_DB_CFG)"
 
 aggregate_matches: ## Select the best candidates across the entire reference collection (candidates per batch -> overall candidates)
-	scripts/benchmark.py --log logs/benchmarks/aggregated_match_$(DATETIME).txt "snakemake aggregate_matches $(SMK_PARAMS) $(SMK_DB_CFG)"
+	mkdir -p $(BENCHMARK_DIR)
+	scripts/benchmark.py --log $(BENCHMARK_DIR)/aggregated_match_$(DATETIME).txt "snakemake aggregate_matches $(SMK_PARAMS) $(SMK_DB_CFG)"
 
 map: ## Map candidates to assemblies (overall candidates -> alignments)
-	scripts/benchmark.py --log logs/benchmarks/map_$(DATETIME).txt   "snakemake map $(SMK_PARAMS) $(SMK_DB_CFG)"
+	mkdir -p $(BENCHMARK_DIR)
+	scripts/benchmark.py --log $(BENCHMARK_DIR)/map_$(DATETIME).txt   "snakemake map $(SMK_PARAMS) $(SMK_DB_CFG)"
 
 ###############
 ## Reporting ##
