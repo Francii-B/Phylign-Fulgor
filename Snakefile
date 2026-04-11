@@ -255,9 +255,6 @@ elif index_load_mode == "mmap-disk":
 wildcard_constraints:
     batch=DB_CONF[DB]["batch_regex"],
 
-# Historical note: the COBS-specific `ruleorder` configuration is intentionally
-# disabled because the workflow now uses meta-Fulgor rules instead.
-
 
 ##################################
 ## Top-level rules
@@ -268,10 +265,6 @@ rule all:
     input:
         f"output/{get_filename_for_all_queries()}.sam_summary.gz",
         f"output/{get_filename_for_all_queries()}.sam_summary.stats",
-
-
-# Historical note: legacy COBS-only download targets were removed when the
-# workflow switched to meta-Fulgor indexes.
 
 
 rule download:
@@ -430,10 +423,6 @@ partial_fulgor_threads = functools.partial(
     predefined_fulgor_threads=predefined_fulgor_threads,
     streaming=streaming,
 )
-
-
-# Historical note: the COBS decompression and query rules were removed after
-# the workflow switched to meta-Fulgor execution.
 
 
 rule run_fulgor:
