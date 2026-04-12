@@ -274,10 +274,11 @@ rule run_fulgor:
                     -t {threads} \\
                     -i {input.mfur_index} \\
                     -q {input.fa} --cobs \\
-                    -o {output.raw_fulgor_output}; \\
-                cat {output.raw_fulgor_output} | ./scripts/postprocess_kmer_matches.py -n {params.nb_best_hits} \\
-                | gzip --fast \\
-                > {output.match}'
+                    -o {output.raw_fulgor_output} \\
+                 && \\
+            ./scripts/postprocess_kmer_matches.py -n {params.nb_best_hits} < {output.raw_fulgor_output} \\
+                    | gzip --fast \\
+                    > {output.match}'
         """
 
 
