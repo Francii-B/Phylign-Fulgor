@@ -9,12 +9,13 @@ with open("config.yaml", "r") as stream:
         print(exc, file=sys.stderr)
         sys.exit(1)
 
-# check if cobs_threads is an int
+# check if fulgor_threads is an int
 try:
-    int(config["cobs_threads"])
-except ValueError:
+    fulgor_threads = config["fulgor_threads"]
+    int(fulgor_threads)
+except (TypeError, ValueError):
     print(
-        "ERROR: to run Phylign in cluster mode, the parameter cobs_threads in config.yaml MUST BE SET to a fixed "
+        "ERROR: to run Phylign in cluster mode, the parameter fulgor_threads in config.yaml MUST BE SET to a fixed "
         "int value. Aborting.",
         file=sys.stderr)
     sys.exit(1)

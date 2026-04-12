@@ -12,123 +12,7 @@ import re
 
 
 extensions = ["fa", "fasta", "fq", "fastq"]
-
-
-def multiglob(patterns):
-    files = []
-    for pattern in patterns:
-        files.extend(glob.glob(pattern))
-    files = list(map(Path, files))
-    return files
-
-
-def get_all_query_filepaths():
-    return multiglob(expand("input/*.{ext}", ext=extensions))
-
-
-def get_all_query_filenames():
-    return sorted([file.with_suffix("").name for file in get_all_query_filepaths()])
-
-
-def get_batches():
-    with open(config["batches"]) as fin:
-        return list(sorted(filter(len, map(str.strip, fin))))
-
-
-def get_filename_for_all_queries():
-    return "___".join(get_all_query_filenames())
-
-
-def get_index_metadata(wildcards, input):
-    batch = wildcards.batch
-    decompressed_indexes_sizes_filepath = input.decompressed_indexes_sizes
-    with open(decompressed_indexes_sizes_filepath) as decompressed_indexes_sizes_fh:
-        for line in decompressed_indexes_sizes_fh:
-            cobs_index, size_in_bytes, xz_decompress_RAM = line.strip().split()
-            batch_for_cobs_index = cobs_index.split("/")[-1].replace(
-                ".mfur", ""
-            )
-            size_in_bytes = int(size_in_bytes)
-            xz_decompress_RAM = int(xz_decompress_RAM)
-            if batch == batch_for_cobs_index:
-                return size_in_bytes, xz_decompress_RAM
-
-    assert (
-        False
-    ), f"Error getting uncompressed batch size for batch {batch}: batch not found"
-
-
-def get_uncompressed_batch_size(wildcards, input):
-    return get_index_metadata(wildcards, input)[0]
-
-
-def get_xz_decompress_RAM_in_MB(wildcards, input):
-    xz_decompression_RAM_usage_in_bytes = get_index_metadata(wildcards, input)[1]
-    xz_decompression_RAM_usage_in_MB = (
-        int(xz_decompression_RAM_usage_in_bytes / 1024 / 1024) + 1
-    )
-    return xz_decompression_RAM_usage_in_MB
-
-
-def get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming):
-    #if ignore_RAM:
-    #    return 0
-    #if streaming:
-    #    # then we are decompressing and running cobs at the same time
-    #    xz_decompression_RAM_usage_in_MB = get_xz_decompress_RAM_in_MB(wildcards, input)
-    #else:
-        #xz_decompression_RAM_usage_in_MB = 0
-    size_in_bytes = get_uncompressed_batch_size(wildcards, input)
-    size_in_MB = int(size_in_bytes / 1024 / 1024) + 1
-    return size_in_MB #+ xz_decompression_RAM_usage_in_MB
-
-
-def get_max_number_of_COBS_threads_from_auto_string(auto_string):
-    cobs_threads = re.findall(r"auto\((\d+)\)", auto_string)
-    parsing_was_successful = len(cobs_threads) == 1
-    assert parsing_was_successful, "Error parsing parameter cobs_threads parameter"
-    cobs_threads = int(cobs_threads[0])
-    return cobs_threads
-
-
-def get_number_of_COBS_threads(wildcards, input, predefined_cobs_threads, streaming):
-    user_defined_nb_of_threads = not predefined_cobs_threads.startswith("auto")
-    if user_defined_nb_of_threads:
-        return int(predefined_cobs_threads)
-
-    use_max_cores = predefined_cobs_threads == "auto"
-    if use_max_cores:
-        max_number_of_COBS_threads = workflow.cores
-    else:
-        max_number_of_COBS_threads = get_max_number_of_COBS_threads_from_auto_string(
-            predefined_cobs_threads
-        )
-
-    uncompressed_batch_size_in_MB = get_uncompressed_batch_size_in_MB(
-        wildcards, input, ignore_RAM=False, streaming=streaming
-    )
-    max_RAM_MB = int(config["max_ram_gb"]) * 1024
-    number_of_cores_to_use = round(
-        uncompressed_batch_size_in_MB / max_RAM_MB * max_number_of_COBS_threads
-    )
-    number_of_cores_to_use = max(number_of_cores_to_use, 1)
-    number_of_cores_to_use = min(number_of_cores_to_use, max_number_of_COBS_threads)
-    is_using_more_than_half_of_the_cores = (
-        number_of_cores_to_use > max_number_of_COBS_threads / 2
-    )
-    if is_using_more_than_half_of_the_cores:
-        # usually in this situation we run just one COBS jobs simultaneously. Better then to use all cores then
-        number_of_cores_to_use = max_number_of_COBS_threads
-    return number_of_cores_to_use
-
-
-def get_index_load_mode():
-    allowed_index_load_modes = ["mem-stream", "mem-disk", "mmap-disk"]
-    index_load_mode = config["index_load_mode"]
-    assert (
-        index_load_mode in allowed_index_load_modes
-    ), f"index_load_mode must be one of {allowed_index_load_modes}"
-    return index_load_mode
+include: "rules/common.smk"
 
 
 ##################################
@@ -142,6 +26,27 @@ configfile: "config.yaml"
 min_version("6.2.0")
 shell.prefix("set -euo pipefail")
 
+DB_CONF = {
+    "661k": {
+        "default_batches": "data/batches_full.txt",
+        "batch_regex": r".+__\d\d",
+        "decompressed_indexes_sizes": "data/decompressed_indexes_sizes.txt",
+        "accessions": "data/661k_batches.txt.xz",
+    },
+    "ATB": {
+        "default_batches": "data/atb_batches_full.txt",
+        "batch_regex": r".+\.batch\.\d{1,3}",
+        "asm_url_tsv": "data/atb_asms_download_link.tsv",
+        "decompressed_indexes_sizes": "data/decompressed_indexes_sizes_fulgor_ATB.txt",
+        "accessions": "data/ATB_batches.txt.xz",
+    },
+}
+
+DB = config.get("database", "661k")
+assert DB in DB_CONF, f"database must be one of {sorted(DB_CONF)}"
+BATCHES_FILE = config.get("batches", DB_CONF[DB]["default_batches"])
+ATB_ASMS_URLS = get_atb_asms_urls() if DB == "ATB" else {}
+
 batches = get_batches()
 print(f"Batches: {batches}")
 
@@ -149,91 +54,33 @@ qfiles = get_all_query_filepaths()
 print(f"Query files: {list(map(str, qfiles))}")
 
 assemblies_dir = Path(f"{config['download_dir']}/asms")
-#cobs_dir = Path(f"{config['download_dir']}/cobs")
 mfur_dir = Path(f"{config['download_dir']}/mfur")
-decompression_dir = Path(
-    config.get("decompression_dir", "intermediate/02_cobs_decompressed")
+
+predefined_fulgor_threads = str(
+    config["fulgor_threads"]
 )
 
-keep_cobs_indexes = config["keep_cobs_indexes"] #mfur indexes are already uncompression
-predefined_cobs_threads = str(config["cobs_threads"])
-#predefined_mfur_threads = str(config["mfur_threads"])
-
-#strictly related to COBS?
 ignore_RAM = False
-load_complete = False
 streaming = False
-cobs_is_an_IO_heavy_job = False
+fulgor_is_an_io_heavy_job = False
 index_load_mode = get_index_load_mode()
 
 if index_load_mode == "mem-stream":
-    # this parameter is ignored because we never decompress indexes to disk with this load mode
-    keep_cobs_indexes = False
-    load_complete = True
     streaming = True
-elif index_load_mode == "mem-disk":
-    load_complete = True
 elif index_load_mode == "mmap-disk":
     # we ignore RAM usage because the OS is responsible for controlling RAM usage in this case
     ignore_RAM = True
-    # we set cobs as an IO-heavy job because during its execution it might access the disk several times
-    # due to mmap
-    cobs_is_an_IO_heavy_job = True
+    # Fulgor becomes IO-heavy in mmap mode because the index is accessed on demand.
+    fulgor_is_an_io_heavy_job = True
 
 
 wildcard_constraints:
-    batch=".+__\d\d",
-
-
-# if keep_cobs_indexes:
-
-#     ruleorder: decompress_cobs > run_cobs > decompress_and_run_cobs
-
-# else:
-
-#     ruleorder: decompress_and_run_cobs > decompress_cobs > run_cobs
-
-
-##################################
-## Download params
-##################################
-
-
-# def cobs_url_fct(wildcards):
-#     x = wildcards.batch
-#     if x >= "eubacterium":
-#         return f"https://zenodo.org/record/6849657/files/{x}.cobs_classic.xz"
-#     else:
-#         return f"https://zenodo.org/record/6845083/files/{x}.cobs_classic.xz"
-
-
-def mfur_url_fct(wildcards): #url to the HQ indexes
-    x = wildcards.batch
-    if x <= "dustbin__15":
-        return f"https://zenodo.org/record/14002973/files/{x}.mfur" #part1
-    elif x <= "mycobacterium_kansasii__01" :
-        return f"https://zenodo.org/record/14002975/files/{x}.mfur" #part2
-    elif x <= "salmonella_enterica__33" :
-        return f"https://zenodo.org/record/14006705/files/{x}.mfur" #part3
-    else :
-        return f"https://zenodo.org/record/14006707/files/{x}.mfur" #part4
-
-
-def asms_url_fct(wildcards):
-    asm_zenodo = 4602622
-    asm_url = f"https://zenodo.org/record/{asm_zenodo}/files/{wildcards.batch}.tar.xz"
-    return asm_url
-
-
-def get_sleep_amount(attempt):
-    return int(config["download_retry_wait"]) * (attempt - 1)
+    batch=DB_CONF[DB]["batch_regex"],
 
 
 ##################################
 ## Top-level rules
 ##################################
-
-
 rule all:
     """Run all
     """
@@ -242,46 +89,37 @@ rule all:
         f"output/{get_filename_for_all_queries()}.sam_summary.stats",
 
 
-# rule download:
-#     """Download assemblies and COBS indexes.
-#     """
-#     input:
-#         [f"{assemblies_dir}/{x}.tar.xz" for x in batches],
-#         [f"{cobs_dir}/{x}.cobs_classic.xz" for x in batches],
-
 rule download:
     """Download assemblies and meta-Fulgor indexes.
     """
     input:
         [f"{assemblies_dir}/{x}.tar.xz" for x in batches],
-        [f"{mfur_dir}/{x}.mfur" for x in batches]
+        [f"{mfur_dir}/{x}.mfur" for x in batches],
+
 
 rule download_asms_batches:
     """Download assemblies.
     """
     input:
-        [f"{assemblies_dir}/{x}.tar.xz" for x in batches]
+        [f"{assemblies_dir}/{x}.tar.xz" for x in batches],
 
-
-# rule download_cobs_batches:
-#     """Download COBS indexes.
-#     """
-#     input:
-#         [f"{cobs_dir}/{x}.cobs_classic.xz" for x in batches]
 
 rule download_mfur_batches:
     """Download meta-Fulgor indexes.
     """
     input:
-        [f"{mfur_dir}/{x}.mfur" for x in batches]
+        [f"{mfur_dir}/{x}.mfur" for x in batches],
+
 
 rule match:
     """Match reads to the meta-Fulgor indexes.
     """
     input:
         all_matches=[
-            f"intermediate/03_match/{batch}____{get_filename_for_all_queries()}.gz" for batch in batches
+            f"intermediate/03_match/{batch}____{get_filename_for_all_queries()}.gz"
+            for batch in batches
         ],
+
 
 rule aggregate_matches:
     """Match reads to the meta-Fulgor indexes + aggregate the results
@@ -297,6 +135,7 @@ rule map:
         f"output/{get_filename_for_all_queries()}.sam_summary.gz",
         f"output/{get_filename_for_all_queries()}.sam_summary.stats",
 
+
 rule fulgor_config:
     """Install Fulgor dependencies and compile
     """
@@ -306,6 +145,8 @@ rule fulgor_config:
         """
         ./scripts/submodule.sh
         """
+
+
 ##################################
 ## Download rules
 ##################################
@@ -329,24 +170,6 @@ rule download_asm_batch:
         """
 
 
-# rule download_cobs_batch:
-#     """Download compressed cobs indexes
-#     """
-#     output:
-#         xz=f"{cobs_dir}/{{batch}}.cobs_classic.xz",
-#     threads: 1
-#     resources:
-#         max_download_threads=1,
-#         mem_mb=200,
-#         sleep_amount=lambda wildcards, attempt: get_sleep_amount(attempt),
-#     params:
-#         url=cobs_url_fct,
-#     shell:
-#         """
-#         scripts/download.sh {params.url} {output.xz} {resources.sleep_amount}
-#         """
-
-
 rule download_mfur_batch:
     """Download uncompressed meta-Fulgor indexes
     """
@@ -364,17 +187,12 @@ rule download_mfur_batch:
         scripts/download.sh {params.url} {output.batch} {resources.sleep_amount} .mfur
         """
 
+
 ##################################
 ## Processing rules
 ##################################
-def get_query_file(wildcards):
-    query_file = multiglob(expand(f"input/{wildcards.qfile}.{{ext}}", ext=extensions))
-    assert len(query_file) == 1
-    return query_file[0]
-
-
 rule fix_query:
-    """Fix query to expected COBS format: single line fastas composed of ACGT bases only
+    """Normalize query to the matching input format: single-line FASTA with ACGT bases only.
     """
     output:
         fixed_query="intermediate/00_queries_preprocessed/{qfile}.fa",
@@ -396,7 +214,7 @@ rule fix_query:
 
 
 rule concatenate_queries:
-    """Concatenate all queries into a single file, so we just need to run COBS/minimap2 just once per batch
+    """Concatenate queries so we run matching and alignment only once per batch.
     """
     output:
         concatenated_query=f"intermediate/01_queries_merged/{get_filename_for_all_queries()}.fa",
@@ -416,182 +234,55 @@ rule concatenate_queries:
 
 # note: snakefmt makes incorrect breaks and spacing for threads; to keep the lines
 #       short to prevent this behaviour, we use the following function
-partial_cobs_threads = functools.partial(
-    get_number_of_COBS_threads,
-    predefined_cobs_threads=predefined_cobs_threads,
+partial_fulgor_threads = functools.partial(
+    get_number_of_fulgor_threads,
+    predefined_fulgor_threads=predefined_fulgor_threads,
     streaming=streaming,
 )
 
 
-# rule decompress_cobs:
-#     """Decompress cobs indexes
-
-#     Note threads: The same number as of COBS threads to ensure that COBS is executed immediately after decompression
-#     """
-#     output:
-#         cobs_index=f"{decompression_dir}/{{batch}}.cobs_classic",
-#     input:
-#         xz=f"{cobs_dir}/{{batch}}.cobs_classic.xz",
-#         decompressed_indexes_sizes="data/decompressed_indexes_sizes.txt",
-#     resources:
-#         max_io_heavy_threads=1,
-#         mem_mb=lambda wildcards, input: int(
-#             get_xz_decompress_RAM_in_MB(wildcards, input) * 1.25
-#         ),
-#     params:
-#         cobs_index_tmp=f"{decompression_dir}/{{batch}}.cobs_classic.tmp",
-#     threads: partial_cobs_threads
-#     shell:
-#         """
-#         ./scripts/benchmark.py --log logs/benchmarks/decompress_cobs/{wildcards.batch}.txt \\
-#             'xzcat --no-sparse --ignore-check "{input.xz}" > "{params.cobs_index_tmp}" \\
-#             && mv "{params.cobs_index_tmp}" "{output.cobs_index}"'
-#         """
-
-
-# rule run_cobs:
-#     """Cobs matching
-#     """
-#     output:
-#         match="intermediate/03_match/{batch}____{qfile}.gz",
-#     input:
-#         cobs_index=f"{decompression_dir}/{{batch}}.cobs_classic",
-#         fa="intermediate/01_queries_merged/{qfile}.fa",
-#         decompressed_indexes_sizes="data/decompressed_indexes_sizes.txt",
-#     resources:
-#         max_io_heavy_threads=int(cobs_is_an_IO_heavy_job),
-#         max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
-#             wildcards, input, ignore_RAM, streaming
-#         ),
-#         mem_mb=lambda wildcards, input: int(
-#             get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
-#             + 1024
-#         ),
-#     threads: partial_cobs_threads
-#     params:
-#         kmer_thres=config["cobs_kmer_thres"],
-#         load_complete="--load-complete" if load_complete else "",
-#         nb_best_hits=config["nb_best_hits"],
-#     priority: 999
-#     conda:
-#         "envs/cobs.yaml"
-#     shell:
-#         """
-#         ./scripts/benchmark.py --log logs/benchmarks/run_cobs/{wildcards.batch}____{wildcards.qfile}.txt \\
-#             'cobs query \\
-#                     {params.load_complete} \\
-#                     -t {params.kmer_thres} \\
-#                     -T {threads} \\
-#                     -i {input.cobs_index} \\
-#                     -f {input.fa} \\
-#                 | ./scripts/postprocess_cobs.py -n {params.nb_best_hits} \\
-#                 | gzip --fast \\
-#                 > {output.match}'
-#         """
-
-
-rule run_mfur:
-    """meta-Fulgor query
+rule run_fulgor:
+    """Run Fulgor for the matching stage against meta-Fulgor indexes.
     """
     output:
-        mfur_output = temp("intermediate/03_match/{batch}____{qfile}-preprocessed.tsv"),
+        raw_fulgor_output=temp("intermediate/03_match/{batch}____{qfile}-preprocessed.tsv"),
         match="intermediate/03_match/{batch}____{qfile}.gz",
     input:
         mfur_index=f"{mfur_dir}/{{batch}}.mfur",
         fa="intermediate/01_queries_merged/{qfile}.fa",
-        decompressed_indexes_sizes="data/decompressed_indexes_sizes.txt",
+        decompressed_indexes_sizes=DB_CONF[DB]["decompressed_indexes_sizes"],
     resources:
-        max_io_heavy_threads=int(cobs_is_an_IO_heavy_job),
+        max_io_heavy_threads=int(fulgor_is_an_io_heavy_job),
         max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
-             wildcards, input, ignore_RAM, streaming
-         ),
-        mem_mb=lambda wildcards, input: int(
-             get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
-             + 1024
+            wildcards, input, ignore_RAM, streaming
         ),
-    threads: partial_cobs_threads
+        mem_mb=lambda wildcards, input: int(
+            get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
+            + 1024
+        ),
+    threads: partial_fulgor_threads
     params:
-        kmer_thres=config["mfur_kmer_thres"],
+        fulgor_threshold=config["fulgor_threshold"],
         nb_best_hits=config["nb_best_hits"],
     priority: 999
-    # conda:
-    #     "envs/cobs.yaml"
+    # modified-Fulgor emits COBS-compatible text consumed by a downstream compatibility layer.
     shell:
         """
-        ./scripts/benchmark.py --log logs/benchmarks/run_mfur/{wildcards.batch}____{wildcards.qfile}.txt \\
+        ./scripts/benchmark.py --log logs/benchmarks/run_fulgor/{wildcards.batch}____{wildcards.qfile}.txt \\
             './external/modified-Fulgor/build/fulgor pseudoalign \\
-                    --threshold {params.kmer_thres} \\
+                    --threshold {params.fulgor_threshold} \\
                     -t {threads} \\
                     -i {input.mfur_index} \\
                     -q {input.fa} --cobs \\
-                    -o {output.mfur_output}; \\
-                cat {output.mfur_output} | ./scripts/postprocess_cobs.py -n {params.nb_best_hits} \\
-                | gzip --fast \\
-                > {output.match}'
+                    -o {output.raw_fulgor_output} \\
+                 && \\
+            ./scripts/postprocess_kmer_matches.py -n {params.nb_best_hits} < {output.raw_fulgor_output} \\
+                    | gzip --fast \\
+                    > {output.match}'
         """
 
 
-# rule decompress_and_run_cobs:
-#     """Decompress Cobs index and run Cobs matching
-#     """
-#     output:
-#         match="intermediate/03_match/{batch}____{qfile}.gz",
-#     input:
-#         compressed_cobs_index=f"{cobs_dir}/{{batch}}.cobs_classic.xz",
-#         fa="intermediate/01_queries_merged/{qfile}.fa",
-#         decompressed_indexes_sizes="data/decompressed_indexes_sizes.txt",
-#     resources:
-#         max_io_heavy_threads=int(cobs_is_an_IO_heavy_job),
-#         max_ram_mb=lambda wildcards, input: get_uncompressed_batch_size_in_MB(
-#             wildcards, input, ignore_RAM, streaming
-#         ),
-#         mem_mb=lambda wildcards, input: int(
-#             get_uncompressed_batch_size_in_MB(wildcards, input, ignore_RAM, streaming)
-#             + 1024
-#         ),
-#     threads: partial_cobs_threads
-#     params:
-#         kmer_thres=config["cobs_kmer_thres"],
-#         decompression_dir=decompression_dir,
-#         cobs_index=lambda wildcards: f"{decompression_dir}/{wildcards.batch}.cobs_classic",
-#         cobs_index_tmp=lambda wildcards: f"{decompression_dir}/{wildcards.batch}.cobs_classic.tmp",
-#         load_complete="--load-complete" if load_complete else "",
-#         nb_best_hits=config["nb_best_hits"],
-#         uncompressed_batch_size=get_uncompressed_batch_size,
-#         streaming=int(streaming),
-#     conda:
-#         "envs/cobs.yaml"
-#     shell:
-#         """
-#         if [ {params.streaming} = 1 ]
-#         then
-#             ./scripts/benchmark.py --log logs/benchmarks/run_cobs/{wildcards.batch}____{wildcards.qfile}.txt \\
-#             './scripts/run_cobs_streaming.sh {params.kmer_thres} {threads} "{input.compressed_cobs_index}" {params.uncompressed_batch_size} "{input.fa}" \\
-#                     | ./scripts/postprocess_cobs.py -n {params.nb_best_hits} \\
-#                     | gzip --fast\\
-#                     > {output.match}'
-#         else
-#             mkdir -p {params.decompression_dir}
-#             ./scripts/benchmark.py --log logs/benchmarks/decompress_cobs/{wildcards.batch}____{wildcards.qfile}.txt \\
-#                 'xzcat "{input.compressed_cobs_index}" > "{params.cobs_index_tmp}" \\
-#                 && mv "{params.cobs_index_tmp}" "{params.cobs_index}"'
-#             ./scripts/benchmark.py --log logs/benchmarks/run_cobs/{wildcards.batch}____{wildcards.qfile}.txt \\
-#                 'cobs query \\
-#                         {params.load_complete} \\
-#                         -t {params.kmer_thres} \\
-#                         -T {threads} \\
-#                         -i "{params.cobs_index}" \\
-#                         -f "{input.fa}" \\
-#                     | ./scripts/postprocess_cobs.py -n {params.nb_best_hits} \\
-#                     | gzip --fast\\
-#                     > {output.match}'
-#             rm -v "{params.cobs_index}"
-#         fi
-#         """
-
-
 rule translate_matches:
-    # """Translate cobs matches.
     """Translate mfur matches.
 
     Output:
@@ -637,6 +328,7 @@ rule batch_align_minimap2:
         minimap_extra_params=config["minimap_extra_params"],
         pipe="--pipe" if config["prefer_pipe"] else "",
         refs_tmp="intermediate/05_map/{batch}____{qfile}.refs.tmp",
+        accessions=DB_CONF[DB]["accessions"],
     conda:
         "envs/minimap2.yaml"
     threads: config["minimap_threads"]
@@ -644,7 +336,7 @@ rule batch_align_minimap2:
         mem_mb=lambda wildcards, attempt: 1000 * 2 ** (attempt),  # 1GB, 2GB, 4GB, 8GB...
     shell:
         """
-        xzcat data/661k_batches.txt.xz \\
+        xzcat {params.accessions} \\
             | grep {wildcards.batch} \\
             | cut -f2 \\
             > {params.refs_tmp}
